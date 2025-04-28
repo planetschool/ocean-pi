@@ -81,7 +81,6 @@ if LCD_On:
 	mylcd.lcd_display_string("Starting up the", 1, 0)
 	mylcd.lcd_display_string("Weather Station", 2, 0)
 
-
 #### Weather Station
 Weather_Station_On = True
 while Weather_Station_On:
@@ -238,7 +237,7 @@ BME280_Sensor_On = False
 if BME280_Sensor_On:
 	from adafruit_bme280 import basic as adafruit_bme280
 	import smbus2
-	bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, int(bme280_temp_pres_hum_address))
+	bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c)
 	BME_humidity = bme280.humidity
 	BME_pressure = bme280.pressure
 	BME_temp = bme280.temperature
@@ -246,10 +245,11 @@ if BME280_Sensor_On:
 	#print("Temp: {}, Pressure: {}, Humidity: {}".format(BME_temp, BME_pressure, BME_humidity))
 
 
-### BME330 Temp, Pressure, Altitude
-BME330_Sensor_On = False
+### BMP388 Temp, Pressure, Altitude
+BMP388_Sensor_On = True
+#uses i2c address 0x77, so cannot be attached to the same pi as BME280
 
-if BME330_Sensor_On:
+if BMP388_Sensor_On:
 	import adafruit_bmp3xx
 	bmp = adafruit_bmp3xx.BMP3XX_I2C(i2c)
 	bmp.sea_level_pressure = 1013.25 #Need to establish sea level pressure in order to extrapolate altitude. Fun project opportunity here.
@@ -374,14 +374,14 @@ while True:
 		print("Magnetometer (micro-Teslas)): X=%0.3f Y=%0.3f Z=%0.3f"%mag.magnetic)
 
 	if UV_Sensor_On:
-		print("UV:", ltr.uvs, "\t\tAmbient Light:", ltr.light)
-   	 	print("UVI:", ltr.uvi, "\t\tLux:", ltr.lux)
+		print("UV:", ltr.uvs, "Ambient Light:", ltr.light)
+		print("UVI:", ltr.uvi, "Lux:", ltr.lux)
 
 	if Ambient_Sensor_On:
-    		print("Ambient light:", veml7700.light)
+		print("Ambient light:", veml7700.light)
 		print("Lux:", veml7700.lux)
 
-	if BME330_Sensor_On:
+	if BMP388_Sensor_On:
 		print("Pressure: {:6.4f} hPa  Temperature: {:5.2f} *C".format(bmp.pressure, bmp.temperature,))
 		print('Altitude: {} meters'.format(bmp.altitude))
     
