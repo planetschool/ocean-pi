@@ -11,6 +11,7 @@ Code, guides, and samples to help you run your code at sea aboard the Planet Sch
 Before creating my virtual environment, there are a few system-wide packages to install:
 "sudo apt update
 sudo apt install python3-dev python3-pip libffi-dev build-essential"
+sudo apt install -y i2c-tools
 
 First issue is installing the dependencies (as usual). After the first step of creating the virtual environment using "python -m venv venv-ocean-pi" inside my root folder "planetschool," I ran "source venv-ocean-pi/bin/activate". Here are the dependencies I have installed:
 1) pip3 install gpiozero
@@ -33,5 +34,7 @@ Ok, that fixed the UART serial data error.
 I need to download a driver for the LCD screen, which I got here: https://gist.github.com/DenisFromHR/cc863375a6e19dce359d
 I used "wget https://gist.githubusercontent.com/DenisFromHR/cc863375a6e19dce359d/raw/36b82e787450d127f5019a40e0a55b08bd43435a/RPi_I2C_driver.py"
 
+As of this step, I am getting no errors when I run my script, but my LCD is not displaying data and the serial input does not appear to be working. I can use "sudo i2cdetect -y 1" to verify what the Pi sees.
 
+When working with UART, the TX of the device must go to the RX of the receiving device. This is different than the usual process of matching connections, but makes sense since the Pi should "receive" what the device "transmits."
 
