@@ -290,6 +290,14 @@ if UV_Sensor_On:
 	ltr = adafruit_ltr390.LTR390(i2c)
 
 
+### VEML7700 Ambient Light Sensor
+import adafruit_veml7700
+Ambient_Sensor_On = True
+
+if Ambient_Sensor_On:
+	veml7700 = adafruit_veml7700.VEML7700(i2c)
+
+
 ### The code itself!
 
 #Here I initialize the CO2 sensor and take the first reading
@@ -356,6 +364,10 @@ while True:
 	if UV_Sensor_On:
 		print("UV:", ltr.uvs, "\t\tAmbient Light:", ltr.light)
    	 	print("UVI:", ltr.uvi, "\t\tLux:", ltr.lux)
+
+	if Ambient_Sensor_On:
+    		print("Ambient light:", veml7700.light)
+		print("Lux:", veml7700.lux)
 
 	if LCD_On:
 		mylcd.lcd_clear()
