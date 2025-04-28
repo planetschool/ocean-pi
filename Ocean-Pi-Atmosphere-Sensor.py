@@ -10,7 +10,10 @@ import board
 import csv
 
 '''
-All packages for the sensors are installed in a Virtual Environment. To activate, run 'source venv-ocean-pi/bin/activate'
+All packages for the sensors are installed in a Virtual Environment. You can create a Virtual Environment by running "python -m venv venv-ocean-pi"
+in the home directory (/planetschool, on our pi)
+
+To activate, run 'source venv-ocean-pi/bin/activate'
 
 The following sensor packages are required to be installed inside the Virtual Environment (venv-ocean-pi) before running this program:
 pip3 install adafruit-circuitpython-scd4x
