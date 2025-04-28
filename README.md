@@ -9,4 +9,6 @@ Code, guides, and samples to help you run your code at sea aboard the Planet Sch
 5) RPi Zero 2W attached to a camera, mounted at the tip of the bowsprit facing aft (this one will be challenging, but the footage will look awesome).
 
 First issue is installing the dependencies (as usual). After the first step of creating the virtual environment using "python -m venv venv-ocean-pi" inside my root folder "planetschool," I ran "source venv-ocean-pi/bin/activate". Here are the dependencies I have installed:
-1) 
+1) pip3 install gpiozero
+2) pip3 install serial
+3) pip3 install board
