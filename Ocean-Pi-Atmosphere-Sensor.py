@@ -272,6 +272,16 @@ if Light_Sensor_On:
 	#print("Brightness: {}, Visible Light: {}, Infrared Light: {}".format(lux, visible, IR))
 
 
+### LSM303 Accelerometer and Magnetometer 
+import adafruit_lsm303_accel
+import adafruit_lis2mdl
+Accel_Sensor_On = True
+
+if Accel_Sensor_On:
+	accel = adafruit_lsm303_accel.LSM303_Accel(i2c)
+	mag = adafruit_lis2mdl.LIS2MDL(i2c)
+
+
 ### The code itself!
 
 #Here I initialize the CO2 sensor and take the first reading
@@ -330,6 +340,10 @@ while True:
 		IR = Light_sensor.infrared
 		print("Brightness: {}, Visible Light: {}, Infrared Light: {}".format(lux, visible, IR))
 		data.extend([lux, visible, IR])
+
+	if Accel_Sensor_On:
+		print("Acceleration (m/s^2): X=%0.3f Y=%0.3f Z=%0.3f"%accel.acceleration)
+		print("Magnetometer (micro-Teslas)): X=%0.3f Y=%0.3f Z=%0.3f"%mag.magnetic)
 
 	if LCD_On:
 		mylcd.lcd_clear()
