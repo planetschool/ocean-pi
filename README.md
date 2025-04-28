@@ -24,4 +24,8 @@ I also disabled Bluetooth with "sudo systemctl disable hciuart"
 
 Ok, that fixed the UART serial data error.
 
+I need to download a driver for the LCD screen, which I got here: https://gist.github.com/DenisFromHR/cc863375a6e19dce359d
+I used "wget https://gist.githubusercontent.com/DenisFromHR/cc863375a6e19dce359d/raw/36b82e787450d127f5019a40e0a55b08bd43435a/RPi_I2C_driver.py"
+
+
 
