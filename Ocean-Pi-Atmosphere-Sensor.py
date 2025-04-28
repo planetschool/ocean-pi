@@ -19,10 +19,11 @@ The following sensor packages are required to be installed inside the Virtual En
 pip3 install adafruit-circuitpython-scd4x
 pip3 install adafruit-circuitpython-tsl2591
 pip3 install adafruit-circuitpython-ltr390
-pip3 install adafruit-circuitpython-bmp388 #does not work
+pip3 install adafruit-circuitpython-bmp3xx
 pip3 install adafruit-circuitpython-sgp40
 pip3 install adafruit-circuitpython-lis2mdl
 pip3 install adafruit-circuitpython-lsm303-accel
+pip3 install adafruit-circuitpython-veml7700
 '''
 
 i2c_port = 1
@@ -232,9 +233,9 @@ if Color_Sensor_On:
 
 ### BME280 Temp, Pressure, Humidity
 #In the terminal run 'sudo pip3 install adafruit-circuitpython-bme280 --break-system-packages'
-BME_Sensor_On = False
+BME280_Sensor_On = False
 
-if BME_Sensor_On:
+if BME280_Sensor_On:
 	from adafruit_bme280 import basic as adafruit_bme280
 	import smbus2
 	bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, int(bme280_temp_pres_hum_address))
@@ -243,6 +244,17 @@ if BME_Sensor_On:
 	BME_temp = bme280.temperature
 	data_header.extend(["BME Temperature (*F)", "BME Humidity (%)", "BME Pressure (hPa)"])
 	#print("Temp: {}, Pressure: {}, Humidity: {}".format(BME_temp, BME_pressure, BME_humidity))
+
+
+### BME330 Temp, Pressure, Altitude
+BME330_Sensor_On = False
+
+if BME330_Sensor_On:
+	import adafruit_bmp3xx
+	bmp = adafruit_bmp3xx.BMP3XX_I2C(i2c)
+	bmp.sea_level_pressure = 1013.25 #Need to establish sea level pressure in order to extrapolate altitude. Fun project opportunity here.
+	bmp.pressure_oversampling = 8
+	bmp.temperature_oversampling = 2
 	
 
 ### CO2 Sensor
@@ -260,10 +272,10 @@ if CO2_Sensor_On:
 
 ### TSL2591 Light Sensor
 #In the terminal, run 'sudo pip3 install adafruit-circuitpython-tsl2591 --break-system-packages'
-import adafruit_tsl2591 as Light
 Light_Sensor_On = True
 
 if Light_Sensor_On:
+	import adafruit_tsl2591 as Light
 	Light_sensor = Light.TSL2591(i2c, int(tsl2590_light_address))
 	lux = Light_sensor.lux
 	visible = Light_sensor.visible		
@@ -273,28 +285,28 @@ if Light_Sensor_On:
 
 
 ### LSM303 Accelerometer and Magnetometer 
-import adafruit_lsm303_accel
-import adafruit_lis2mdl
 Accel_Sensor_On = True
 
 if Accel_Sensor_On:
+	import adafruit_lsm303_accel
+	import adafruit_lis2mdl
 	accel = adafruit_lsm303_accel.LSM303_Accel(i2c)
 	mag = adafruit_lis2mdl.LIS2MDL(i2c)
 
 
 ### LTR390 UV Sensor
-import adafruit_ltr390
 UV_Sensor_On = True
 
 if UV_Sensor_On:
+	import adafruit_ltr390
 	ltr = adafruit_ltr390.LTR390(i2c)
 
 
 ### VEML7700 Ambient Light Sensor
-import adafruit_veml7700
 Ambient_Sensor_On = True
 
 if Ambient_Sensor_On:
+	import adafruit_veml7700
 	veml7700 = adafruit_veml7700.VEML7700(i2c)
 
 
@@ -332,7 +344,7 @@ while True:
 		print("R:" + str(red) + " G:" + str(green) + " B:" + str(blue))
 		data.append([red, green, blue])
 
-	if BME_Sensor_On:
+	if BME280_Sensor_On:
 		BME_humidity = round(bme280.humidity, 1)
 		BME_pressure = round(bme280.pressure, 1)
 		BME_temp = round(bme280.temperature, 1)
@@ -369,6 +381,11 @@ while True:
     		print("Ambient light:", veml7700.light)
 		print("Lux:", veml7700.lux)
 
+	if BME330_Sensor_On:
+		print("Pressure: {:6.4f} hPa  Temperature: {:5.2f} *C".format(bmp.pressure, bmp.temperature,))
+		print('Altitude: {} meters'.format(bmp.altitude))
+    
+
 	if LCD_On:
 		mylcd.lcd_clear()
 		if Light_Sensor_On:
@@ -376,7 +393,7 @@ while True:
 			mylcd.lcd_display_string("Bright: {} Lux".format(lux), 1, 0)
 			mylcd.lcd_display_string("IR: {} , Vis: {}".format(IR, visible), 2, 0)
 			sleep(2)
-		if BME_Sensor_On:
+		if BME280_Sensor_On:
 			mylcd.lcd_clear()
 			mylcd.lcd_display_string("Press: {} hPa".format(BME_pressure), 1, 0)
 			mylcd.lcd_display_string("Humid: {} %".format(BME_humidity), 2, 0)
