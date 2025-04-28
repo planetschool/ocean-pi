@@ -10,5 +10,5 @@ Code, guides, and samples to help you run your code at sea aboard the Planet Sch
 
 First issue is installing the dependencies (as usual). After the first step of creating the virtual environment using "python -m venv venv-ocean-pi" inside my root folder "planetschool," I ran "source venv-ocean-pi/bin/activate". Here are the dependencies I have installed:
 1) pip3 install gpiozero
-2) pip3 install serial
+2) pip3 install pyserial
 3) pip3 install board
