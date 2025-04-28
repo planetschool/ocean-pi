@@ -12,6 +12,7 @@ First issue is installing the dependencies (as usual). After the first step of c
 1) pip3 install gpiozero
 2) pip3 install pyserial
 3) pip3 install board
+4) pip3 install smbus2
 
 When setting up the Pi, ensure that SSH, I2C, and Serial are all enabled using "sudo raspi-config"
 
