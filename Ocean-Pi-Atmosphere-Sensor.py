@@ -18,10 +18,11 @@ To activate, run 'source venv-ocean-pi/bin/activate'
 The following sensor packages are required to be installed inside the Virtual Environment (venv-ocean-pi) before running this program:
 pip3 install adafruit-circuitpython-scd4x
 pip3 install adafruit-circuitpython-tsl2591
-pip3 install adafruit-circuitpython-lsm303agr #does not work
 pip3 install adafruit-circuitpython-ltr390
 pip3 install adafruit-circuitpython-bmp388 #does not work
 pip3 install adafruit-circuitpython-sgp40
+pip3 install adafruit-circuitpython-lis2mdl
+pip3 install adafruit-circuitpython-lsm303-accel
 '''
 
 i2c_port = 1
