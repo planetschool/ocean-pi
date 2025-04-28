@@ -282,6 +282,14 @@ if Accel_Sensor_On:
 	mag = adafruit_lis2mdl.LIS2MDL(i2c)
 
 
+### LTR390 UV Sensor
+import adafruit_ltr390
+UV_Sensor_On = True
+
+if UV_Sensor_On:
+	ltr = adafruit_ltr390.LTR390(i2c)
+
+
 ### The code itself!
 
 #Here I initialize the CO2 sensor and take the first reading
@@ -344,6 +352,10 @@ while True:
 	if Accel_Sensor_On:
 		print("Acceleration (m/s^2): X=%0.3f Y=%0.3f Z=%0.3f"%accel.acceleration)
 		print("Magnetometer (micro-Teslas)): X=%0.3f Y=%0.3f Z=%0.3f"%mag.magnetic)
+
+	if UV_Sensor_On:
+		print("UV:", ltr.uvs, "\t\tAmbient Light:", ltr.light)
+   	 	print("UVI:", ltr.uvi, "\t\tLux:", ltr.lux)
 
 	if LCD_On:
 		mylcd.lcd_clear()
