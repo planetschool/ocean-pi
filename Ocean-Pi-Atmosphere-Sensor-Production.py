@@ -213,12 +213,7 @@ while Weather_Station_On:
 		
 		"scd41_co2_ppm": None,
 		"scd41_humidity_%": None,
-		"scd41_temperature_C": None,
-		
-		"bme688_temperature_c": None,
-		"bme688_humidity_percent": None,
-		"bme688_pressure_hpa": None,
-		"bme688_gas_resistance_ohm": None,
+		"scd41_temperature_F": None,
 
 		"tsl2591_lux": None,
 		"tsl2591_visible": None,
@@ -382,19 +377,21 @@ while Weather_Station_On:
 		payload["wxstation_pressure_0.1 hpa"] = my_barometric_total
 		
 		if Color_Sensor_On:
-			red = light_sensor.color_rgb_bytes[0]
-			green = light_sensor.color_rgb_bytes[1]
-			blue = light_sensor.color_rgb_bytes[2]
-			print("R:" + str(red) + " G:" + str(green) + " B:" + str(blue))
-			data.append([red, green, blue])
+			try:
+				red = light_sensor.color_rgb_bytes[0]
+				green = light_sensor.color_rgb_bytes[1]
+				blue = light_sensor.color_rgb_bytes[2]
+				print("R:" + str(red) + " G:" + str(green) + " B:" + str(blue))
+				data.append([red, green, blue])
 
 		if BME280_Sensor_On:
-			BME_humidity = round(bme280.humidity, 1)
-			BME_pressure = round(bme280.pressure, 1)
-			BME_temp = round(bme280.temperature, 1)
-			print("BME_Temp: {}, BME_Pressure: {}, BME_Humidity: {}".format(BME_temp, BME_pressure, BME_humidity))
-			data.append([BME_temp, BME_humidity, BME_pressure])
-			
+			try:
+				BME_humidity = round(bme280.humidity, 1)
+				BME_pressure = round(bme280.pressure, 1)
+				BME_temp = round(bme280.temperature, 1)
+				print("BME_Temp: {}, BME_Pressure: {}, BME_Humidity: {}".format(BME_temp, BME_pressure, BME_humidity))
+				data.append([BME_temp, BME_humidity, BME_pressure])
+		
 		if CO2_Sensor_On:
 			try:
 				if CO2_sensor.data_ready:
@@ -405,7 +402,10 @@ while Weather_Station_On:
 				print("CO2_Temp: {} *F".format(CO2_temp_F))
 				print("CO2: {} ppm".format(CO2_CO2))
 				print("CO2_Humid: {} %".format(CO2_humidity))
-				data.extend([CO2_temp_F, CO2_humidity, CO2_CO2])
+				#data.extend([CO2_temp_F, CO2_humidity, CO2_CO2])
+				payload["scd41_co2_ppm"] = CO2_CO2
+				payload["scd41_humidity_%"] = CO2_humidity
+				payload["scd41_temperature_F"] = CO2_temp_F
 			
 		if Light_Sensor_On:
 			try:
@@ -413,24 +413,54 @@ while Weather_Station_On:
 				visible = Light_sensor.visible
 				IR = Light_sensor.infrared
 				print("Brightness: {}, Visible Light: {}, Infrared Light: {}".format(lux, visible, IR))
-				data.extend([lux, visible, IR])
+				#data.extend([lux, visible, IR])
+				payload["tsl2591_lux"] = lux
+				payload["tsl2591_visible"] = visible
+				payload["tsl2591_IR"] = IR
 
 		if Accel_Sensor_On:
 			try:
 				print("Acceleration (m/s^2): X=%0.3f Y=%0.3f Z=%0.3f"%accel.acceleration)
 				print("Magnetometer (micro-Teslas)): X=%0.3f Y=%0.3f Z=%0.3f"%mag.magnetic)
+				payload["lsm303_acceleration_m/s^2"] = accel.acceleration
+				payload["lsm303_magnetometer_microTeslas"] = mag.magnetic
 
 		if UV_Sensor_On:
-			print("UV:", ltr.uvs, "Ambient Light:", ltr.light)
-			print("UVI:", ltr.uvi, "Lux:", ltr.lux)
+			try:
+				UV = ltr.uvs
+				ambient = ltr.light
+				UVi = ltr.uvi
+				lux = ltr.lux
+				print("UV:", UV, "Ambient Light:", ambient)
+				print("UVI:", UVi, "Lux:", lux)
+				payload["ltr390_UV_raw"] = UV
+				payload["ltr390_UV_index"] = UVi
+				payload["ltr390_ambient_raw"] = ambient
+				payload["ltr390_ambient_index"] = lux
+				
+		if Gas_Sensor_On:
+			try:
+				mox = sgp.raw
+				payload["sgp40_mox_raw"] = mox
 
 		if Ambient_Sensor_On:
-			print("Ambient light:", veml7700.light)
-			print("Lux:", veml7700.lux)
+			try:
+				ambient = veml7700.light
+				lux = veml7700.lux
+				print("Ambient light:", ambient)
+				print("Lux:", lux)
+				payload["veml7700_ambient"] = ambient
+				payload["veml7700_lux"] = lux
 
 		if BMP388_Sensor_On:
-			print("Pressure: {:6.4f} hPa  Temperature: {:5.2f} *C".format(bmp.pressure, bmp.temperature,))
-			print('Altitude: {} meters'.format(bmp.altitude))
+			try:
+				pressure = bmp.pressure
+				temp = bmp.temperature
+				print("Pressure: {:6.4f} hPa  Temperature: {:5.2f} *C".format(pressure, temp,))
+				print('Altitude: {} meters'.format(bmp.altitude))
+				payload["bmp388_pressure_hpa"] = pressure
+				payload["bmp388_temperature_C"] = temp
+
 		
 	#the LCD/display code will need to be rethought since it presents the data more slowly (scrolling through several screens) than the data is gathered.
 		if LCD_On:
