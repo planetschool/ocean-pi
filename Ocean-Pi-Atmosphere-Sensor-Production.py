@@ -1,5 +1,4 @@
 from gpiozero import CPUTemperature
-cpu = CPUTemperature()
 import http.server
 import socketserver
 import datetime
@@ -8,6 +7,9 @@ import os
 import serial
 import board
 import csv
+import paho.mqtt.client as mqtt
+import json
+import busio
 
 '''
 All packages for the sensors are installed in a Virtual Environment. You can create a Virtual Environment by running "python -m venv venv-ocean-pi"
@@ -26,6 +28,13 @@ pip3 install adafruit-circuitpython-lsm303-accel
 pip3 install adafruit-circuitpython-veml7700
 '''
 
+# --- Network Settings --- #
+DEVICE_ID = "atmosphere_node_1"
+MQTT_BROKER = "localhost"
+MQTT_PORT = 1883
+MQTT_TOPIC = "oceanpi/atmosphere"
+
+# --- I2C Settings --- #
 i2c_port = 1
 tcs34725_RGB_address = 0x29 #present
 bme280_temp_pres_hum_address = 0x77 #present? or bmp388?
@@ -38,6 +47,7 @@ lsm303agr_accel_magnet_address = 0x19 + 0x1e #present and unsure of why two addr
 bmp388_precision_alt_temp_pres_address = 0x77 #present? or bme280?
 sgp40_mox_gas_address = 0x59 #present but does not show in i2cdetect for some reason
 
+# --- UART Settings --- #
 ser = serial.Serial(
 	port="/dev/ttyAMA0",
 	baudrate = 9600,
@@ -59,6 +69,7 @@ barometrics = []
 all_data = [airdirections, airspeed1s, airspeed5s, temperatures, rainfall1hs, rainfall24hs, humiditys, barometrics]
 
 knot_conversion = 0.868976
+cpu = CPUTemperature()
 
 ### How to Read the Serial Output
 # Example output: c000s000g000t086r000p000h53b10020
@@ -165,6 +176,10 @@ if Ambient_Sensor_On:
 	import adafruit_veml7700
 	veml7700 = adafruit_veml7700.VEML7700(i2c)
 
+# --- Initialize MQTT --- #
+client = mqtt.Client()
+client.connect(MQTT_BROKER, MQTT_PORT, 60)
+
 
 #### Weather Station
 Weather_Station_On = True
@@ -268,6 +283,7 @@ while Weather_Station_On:
 		my_int_ad = int(my_adval)
 		my_ad = (my_int_ad)
 		print ("Wind Direction:" + '%.2d' % my_ad + " Degrees")
+		payload["wxstation_wind_direction_deg"] = my_ad
 		if my_ad  == 0:
 		   my_dir_ad = "North"
 		   print (my_dir_ad)
@@ -292,9 +308,10 @@ while Weather_Station_On:
 		elif my_ad == 315:
 		   my_dir_ad = "North West"
 		   print (my_dir_ad)
-		else:
-		   print ("Something else happened")
-
+		else
+		   my_dir_ad = "Null"
+		   print ("Null")
+		payload["wxstation_wind_direction_cardinal"] = my_dir_ad
 		
 		# --- AirSpeed 1MinAvg --- #
 		for airspeed1 in range(len(airspeed1s)):
@@ -304,6 +321,7 @@ while Weather_Station_On:
 		my_float_as1 = float(my_as1val)
 		my_as1_initial = (my_float_as1 * knot_conversion)
 		print ("Average Wind Speed(1min):" + '%.1f' % my_as1_initial + "kts")
+		payload["wxstation_wind_speed_1min_avg_kts"] = my_as1_initial
 
 		# --- AirSpeed 5MinAvg --- #
 		for airspeed5 in range(len(airspeed5s)):
@@ -313,6 +331,7 @@ while Weather_Station_On:
 		my_float_as2 = float(my_as5val)
 		my_as2_initial = (my_float_as2 * knot_conversion)
 		print ("Max Wind Speed(5min):" + '%.1f' % my_as2_initial + "kts")
+		payload["wxstation_wind_speed_5min_avg_kts"] = my_as2_initial
 
 		# --- Temperature --- #
 		for temperature in range(len(temperatures)):
@@ -321,6 +340,7 @@ while Weather_Station_On:
 		#print("This is the Temperature value" + my_temperatureval)
 		my_float_temp = float(my_temperatureval)
 		print ("Temperature:" + '%.1f' % my_float_temp + "F")
+		payload["wxstation_temperature_F"] = my_float_temp
 
 		# --- Rainfall 1H --- #
 		for rainfall1h in range(len(rainfall1hs)):
@@ -330,6 +350,7 @@ while Weather_Station_On:
 		my_float_rf1h = float(my_rainfall1hval)
 		my_rf1h = (my_float_rf1h * 0.01)
 		print ("Rainfall(1hr):" + '%.1f' % my_rf1h + "in")
+		payload["wxstation_rain_last_1hour_.01in"] = my_rf1h
 
 		# --- Rainfall 24H --- #
 		for rainfall24h in range(len(rainfall24hs)):
@@ -339,6 +360,7 @@ while Weather_Station_On:
 		my_float_rf24h = float(my_rainfall24hval)
 		my_rf24h = (my_float_rf24h * 0.01)
 		print ("Rainfall(24hr):" + '%.1f' % my_rf24h + "in")
+		payload["wxstation_rain_last_24hours_.01in"] = my_rf24h
 
 		# --- Humidity --- #
 		for humidity in range(len(humiditys)):
@@ -347,6 +369,7 @@ while Weather_Station_On:
 		my_int_humidity = int(my_humidityval)
 		my_humidity = (my_int_humidity)
 		print ("Humidity:" + '%.1d' % my_humidity + "%")
+		payload["wxstation_humidity_%"] = my_humidity
 
 		# --- Barometric Pressure --- #
 		for barometric in range(len(barometrics)):
@@ -356,6 +379,7 @@ while Weather_Station_On:
 		my_float_barometric = float(my_barometricval)
 		my_barometric_total = (my_float_barometric / 10.00)
 		print ("Barometric Pressure:" + '%.1f' % my_barometric_total + "hPa")
+		payload["wxstation_pressure_0.1 hpa"] = my_barometric_total
 		
 		if Color_Sensor_On:
 			red = light_sensor.color_rgb_bytes[0]
