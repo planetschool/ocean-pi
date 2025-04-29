@@ -184,16 +184,46 @@ while True:
 		break
 		#Once the CO2 sensor is ready, we get things going.
 
-counter = 0
-start_time = "{}-{}-{}_{}:{}".format(time.localtime().tm_mon, time.localtime().tm_mday, time.localtime().tm_year, time.localtime().tm_hour, time.localtime().tm_min)
-print("Starting to measure at {}".format(start_time))
-with open("data_logger_{}.csv".format(start_time), "w") as data_file:
-	datawriter = csv.writer(data_file, delimiter = ",")
-	datawriter.writerow(data_header)
 
 while Weather_Station_On:
 	
-	data = [time.localtime().tm_mon, time.localtime().tm_mday, time.localtime().tm_year, time.localtime().tm_hour, time.localtime().tm_min, time.localtime().tm_sec]
+	payload = {
+		"device_id": DEVICE_ID,
+		"timestamp": datetime.utcnow().isoformat() + "Z",
+		
+		"bme280_temperature_c": None,
+		"bme280_humidity_percent": None,
+		"bme280_pressure_hpa": None,
+		
+		"bmp388_altitude_m": None,
+		"bmp388_pressure_hpa": None,
+		
+		"ccs811_co2_ppm": None,
+		"ccs811_voc_ppm": None,
+		
+		"scd41_co2_ppm": None,
+		"scd41_humidity_%": None,
+		"scd41_temperature_C": None,
+		
+		"bme688_temperature_c": None,
+		"bme688_humidity_percent": None,
+		"bme688_pressure_hpa": None,
+		"bme688_gas_resistance_ohm": None,
+
+		"tsl2591_lux": None,
+		"tsl2591_visible": None,
+		"tsl2591_IR": None,
+		
+		"wxstation_wind_speed_1min_avg_kts": None,
+		"wxstation_wind_speed_5min_avg_kts": None,
+		"wxstation_wind_direction_deg": None,
+		"wxstation_wind_direction_cardinal": None,
+		"wxstation_rain_last_1hour_.01in": None,
+		"wxstation_rain_last_24hours_.01in": None,
+		"wxstation_temperature_F":None,
+		"wxstation_humidity_%": None,
+		"wxstation_pressure_0.1 hpa": None
+    	}
 	
 	
 	current_char = ser.read()
@@ -259,8 +289,8 @@ while Weather_Station_On:
 		else:
 		   print ("Something else happened")
 
-		##
-		##AirSpeedAvg1###
+		
+		# --- AirSpeed 1MinAvg --- #
 		for airspeed1 in range(len(airspeed1s)):
 			airspeed1s[airspeed1] = int(airspeed1s[airspeed1])
 		my_as1val = ''.join(map(str, airspeed1s))
@@ -269,7 +299,7 @@ while Weather_Station_On:
 		my_as1_initial = (my_float_as1 * knot_conversion)
 		print ("Average Wind Speed(1min):" + '%.1f' % my_as1_initial + "kts")
 
-		###AirSpeedAvg2###
+		# --- AirSpeed 5MinAvg --- #
 		for airspeed5 in range(len(airspeed5s)):
 			airspeed5s[airspeed5] = int(airspeed5s[airspeed5])
 		my_as5val = ''.join(map(str, airspeed5s))
@@ -278,7 +308,7 @@ while Weather_Station_On:
 		my_as2_initial = (my_float_as2 * knot_conversion)
 		print ("Max Wind Speed(5min):" + '%.1f' % my_as2_initial + "kts")
 
-		###Temperature####
+		# --- Temperature --- #
 		for temperature in range(len(temperatures)):
 			temperatures[temperature] = int(temperatures[temperature])
 		my_temperatureval = ''.join(map(str, temperatures))
@@ -286,7 +316,7 @@ while Weather_Station_On:
 		my_float_temp = float(my_temperatureval)
 		print ("Temperature:" + '%.1f' % my_float_temp + "F")
 
-		###Rainfall 1H###
+		# --- Rainfall 1H --- #
 		for rainfall1h in range(len(rainfall1hs)):
 			rainfall1hs[rainfall1h] = int(rainfall1hs[rainfall1h])
 		my_rainfall1hval = ''.join(map(str, rainfall1hs))
@@ -295,7 +325,7 @@ while Weather_Station_On:
 		my_rf1h = (my_float_rf1h * 0.01)
 		print ("Rainfall(1hr):" + '%.1f' % my_rf1h + "in")
 
-		###Rainfall 24H###
+		# --- Rainfall 24H --- #
 		for rainfall24h in range(len(rainfall24hs)):
 			rainfall24hs[rainfall24h] = int(rainfall24hs[rainfall24h])
 		my_rainfall24hval = ''.join(map(str, rainfall24hs))
@@ -304,7 +334,7 @@ while Weather_Station_On:
 		my_rf24h = (my_float_rf24h * 0.01)
 		print ("Rainfall(24hr):" + '%.1f' % my_rf24h + "in")
 
-		###Humidity###
+		# --- Humidity --- #
 		for humidity in range(len(humiditys)):
 			humiditys[humidity] = int(humiditys[humidity])
 		my_humidityval = ''.join(map(str, humiditys))
@@ -312,7 +342,7 @@ while Weather_Station_On:
 		my_humidity = (my_int_humidity)
 		print ("Humidity:" + '%.1d' % my_humidity + "%")
 
-		###Barometric Pressure###
+		# --- Barometric Pressure --- #
 		for barometric in range(len(barometrics)):
 			barometrics[barometric] = int(barometrics[barometric])
 		my_barometricval = ''.join(map(str, barometrics))
@@ -336,26 +366,29 @@ while Weather_Station_On:
 			data.append([BME_temp, BME_humidity, BME_pressure])
 			
 		if CO2_Sensor_On:
-			if CO2_sensor.data_ready:
-				CO2_temp_C = round(CO2_sensor.temperature, 1)
-				CO2_humidity = round(CO2_sensor.relative_humidity, 1)
-				CO2_CO2 = CO2_sensor.CO2
-			CO2_temp_F = round(CO2_temp_C * (9/5) + 32, 1) 
-			print("CO2_Temp: {} *F".format(CO2_temp_F))
-			print("CO2: {} ppm".format(CO2_CO2))
-			print("CO2_Humid: {} %".format(CO2_humidity))
-			data.extend([CO2_temp_F, CO2_humidity, CO2_CO2])
+			try:
+				if CO2_sensor.data_ready:
+					CO2_temp_C = round(CO2_sensor.temperature, 1)
+					CO2_humidity = round(CO2_sensor.relative_humidity, 1)
+					CO2_CO2 = CO2_sensor.CO2
+				CO2_temp_F = round(CO2_temp_C * (9/5) + 32, 1) 
+				print("CO2_Temp: {} *F".format(CO2_temp_F))
+				print("CO2: {} ppm".format(CO2_CO2))
+				print("CO2_Humid: {} %".format(CO2_humidity))
+				data.extend([CO2_temp_F, CO2_humidity, CO2_CO2])
 			
 		if Light_Sensor_On:
-			lux = round(Light_sensor.lux, 1)
-			visible = Light_sensor.visible
-			IR = Light_sensor.infrared
-			print("Brightness: {}, Visible Light: {}, Infrared Light: {}".format(lux, visible, IR))
-			data.extend([lux, visible, IR])
+			try:
+				lux = round(Light_sensor.lux, 1)
+				visible = Light_sensor.visible
+				IR = Light_sensor.infrared
+				print("Brightness: {}, Visible Light: {}, Infrared Light: {}".format(lux, visible, IR))
+				data.extend([lux, visible, IR])
 
 		if Accel_Sensor_On:
-			print("Acceleration (m/s^2): X=%0.3f Y=%0.3f Z=%0.3f"%accel.acceleration)
-			print("Magnetometer (micro-Teslas)): X=%0.3f Y=%0.3f Z=%0.3f"%mag.magnetic)
+			try:
+				print("Acceleration (m/s^2): X=%0.3f Y=%0.3f Z=%0.3f"%accel.acceleration)
+				print("Magnetometer (micro-Teslas)): X=%0.3f Y=%0.3f Z=%0.3f"%mag.magnetic)
 
 		if UV_Sensor_On:
 			print("UV:", ltr.uvs, "Ambient Light:", ltr.light)
@@ -394,3 +427,10 @@ while Weather_Station_On:
 				mylcd.lcd_clear()
 				mylcd.lcd_display_string("R:" + str(red) + " G:" + str(green) + " B:" + str(blue), 1, 0)
 				sleep(2)
+		# --- Publish MQTT ---
+		try:
+			client.publish(MQTT_TOPIC, json.dumps(payload))
+			print(f"[PUBLISH] {payload}")
+		except Exception as e:
+			print(f"[ERROR] MQTT publish failed: {e}")
+	
