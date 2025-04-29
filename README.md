@@ -23,7 +23,7 @@ First issue is installing the dependencies (as usual). After the first step of c
 
 When setting up the Pi, ensure that SSH, I2C, and Serial are all enabled using "sudo raspi-config"
 
-I am now getting a serial error, so I am making sure Bluetooth does not use the serial port I am trying to use. I recall this from before. I have tried adding this line to "/boot/config.txt":
+I am now getting a serial error, so I am making sure Bluetooth does not use the serial port I am trying to use. I recall this from before. I have tried adding this line to "/boot/firmware/config.txt":
 
 "# Disable Bluetooth if you want the full hardware UART (recommended for sensors)
 dtoverlay=disable-bt"
