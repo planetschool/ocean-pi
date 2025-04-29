@@ -89,12 +89,13 @@ Sensor_Interval = 5		# Number of seconds between polling the sensor array
 data_header = ["Month", "Day", "Year", "Hour", "Minute", "Second"]
 
 ### Mox Gas Sensor
-import adafruit_sgp40
-sgp = adafruit_sgp40.SGP40(i2c, int(sgp40_mox_gas_address))
-print("Raw gas: ", sgp.raw)
+Gas_Sensor_On = True
+if Gas_Sensor_On:
+	import adafruit_sgp40
+	sgp = adafruit_sgp40.SGP40(i2c, int(sgp40_mox_gas_address))
+	print("Raw gas: ", sgp.raw)
 
 ### Color Sensor TCS34725
-#In the terminal, run 'sudo pip3 install adafruit-circuitpython-tcs34725 --break-system-packages'
 Color_Sensor_On = False
 if Color_Sensor_On:
 	import adafruit_tcs34725
@@ -103,7 +104,6 @@ if Color_Sensor_On:
 	data_header.extend(["Red Light", "Green Light", "Blue Light"])
 	
 ### BME280 Temp, Pressure, Humidity
-#In the terminal run 'sudo pip3 install adafruit-circuitpython-bme280 --break-system-packages'
 BME280_Sensor_On = False
 if BME280_Sensor_On:
 	from adafruit_bme280 import basic as adafruit_bme280
@@ -126,8 +126,6 @@ if BMP388_Sensor_On:
 	bmp.temperature_oversampling = 2
 
 ### CO2 Sensor
-#In the terminal, run 'sudo pip3 install adafruit-circuitpython-scd4x --break-system-packages'
-#If using a venv (virtual environment), run 'pip3 install adafruit-circuitpython-scd4x'
 CO2_Sensor_On = True
 if CO2_Sensor_On:
 	import adafruit_scd4x as CO2
@@ -137,7 +135,6 @@ if CO2_Sensor_On:
 	data_header.extend(["CO2 Temperature (*F)", "CO2 Humidity (%)", "CO2 PPM"])
 
 ### TSL2591 Light Sensor
-#In the terminal, run 'sudo pip3 install adafruit-circuitpython-tsl2591 --break-system-packages'
 Light_Sensor_On = True
 if Light_Sensor_On:
 	import adafruit_tsl2591 as Light
@@ -191,15 +188,13 @@ while Weather_Station_On:
 		"device_id": DEVICE_ID,
 		"timestamp": datetime.utcnow().isoformat() + "Z",
 		
-		"bme280_temperature_c": None,
-		"bme280_humidity_percent": None,
-		"bme280_pressure_hpa": None,
-		
-		"bmp388_altitude_m": None,
 		"bmp388_pressure_hpa": None,
+		"bmp388_temperature_C": None,
 		
 		"ccs811_co2_ppm": None,
 		"ccs811_voc_ppm": None,
+
+		"sgp40_mox_raw": None,
 		
 		"scd41_co2_ppm": None,
 		"scd41_humidity_%": None,
@@ -213,6 +208,17 @@ while Weather_Station_On:
 		"tsl2591_lux": None,
 		"tsl2591_visible": None,
 		"tsl2591_IR": None,
+
+		"ltr390_UV_raw": None,
+		"ltr390_UV_index": None,
+		"ltr390_ambient_raw": None,
+		"ltr390_ambient_index": None,
+
+		"veml7700_ambient": None,
+		"veml7700_lux": None,
+
+		"lsm303_acceleration_m/s^2": None,
+		"lsm303_magnetometer_microTeslas": None,
 		
 		"wxstation_wind_speed_1min_avg_kts": None,
 		"wxstation_wind_speed_5min_avg_kts": None,
