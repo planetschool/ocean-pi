@@ -201,13 +201,10 @@ while Weather_Station_On:
 	
 	payload = {
 		"device_id": DEVICE_ID,
-		"timestamp": datetime.utcnow().isoformat() + "Z",
+		"timestamp": datetime.datetime.utcnow().isoformat() + "Z",
 		
 		"bmp388_pressure_hpa": None,
 		"bmp388_temperature_C": None,
-		
-		"ccs811_co2_ppm": None,
-		"ccs811_voc_ppm": None,
 
 		"sgp40_mox_raw": None,
 		
@@ -303,7 +300,7 @@ while Weather_Station_On:
 		elif my_ad == 315:
 		   my_dir_ad = "North West"
 		   print (my_dir_ad)
-		else
+		else:
 		   my_dir_ad = "Null"
 		   print ("Null")
 		payload["wxstation_wind_direction_cardinal"] = my_dir_ad
@@ -382,7 +379,9 @@ while Weather_Station_On:
 				green = light_sensor.color_rgb_bytes[1]
 				blue = light_sensor.color_rgb_bytes[2]
 				print("R:" + str(red) + " G:" + str(green) + " B:" + str(blue))
-				data.append([red, green, blue])
+				#data.append([red, green, blue])
+			except Exception:
+				pass
 
 		if BME280_Sensor_On:
 			try:
@@ -390,7 +389,9 @@ while Weather_Station_On:
 				BME_pressure = round(bme280.pressure, 1)
 				BME_temp = round(bme280.temperature, 1)
 				print("BME_Temp: {}, BME_Pressure: {}, BME_Humidity: {}".format(BME_temp, BME_pressure, BME_humidity))
-				data.append([BME_temp, BME_humidity, BME_pressure])
+				#data.append([BME_temp, BME_humidity, BME_pressure])
+			except Exception:
+				pass
 		
 		if CO2_Sensor_On:
 			try:
@@ -405,7 +406,9 @@ while Weather_Station_On:
 				#data.extend([CO2_temp_F, CO2_humidity, CO2_CO2])
 				payload["scd41_co2_ppm"] = CO2_CO2
 				payload["scd41_humidity_%"] = CO2_humidity
-				payload["scd41_temperature_F"] = CO2_temp_F
+				payload["scd41_temperature_F"] = CO2_temp_F		
+			except Exception:
+				pass
 			
 		if Light_Sensor_On:
 			try:
@@ -417,6 +420,8 @@ while Weather_Station_On:
 				payload["tsl2591_lux"] = lux
 				payload["tsl2591_visible"] = visible
 				payload["tsl2591_IR"] = IR
+			except Exception:
+				pass
 
 		if Accel_Sensor_On:
 			try:
@@ -424,6 +429,8 @@ while Weather_Station_On:
 				print("Magnetometer (micro-Teslas)): X=%0.3f Y=%0.3f Z=%0.3f"%mag.magnetic)
 				payload["lsm303_acceleration_m/s^2"] = accel.acceleration
 				payload["lsm303_magnetometer_microTeslas"] = mag.magnetic
+			except Exception:
+				pass
 
 		if UV_Sensor_On:
 			try:
@@ -437,11 +444,15 @@ while Weather_Station_On:
 				payload["ltr390_UV_index"] = UVi
 				payload["ltr390_ambient_raw"] = ambient
 				payload["ltr390_ambient_index"] = lux
+			except Exception:
+				pass
 				
 		if Gas_Sensor_On:
 			try:
 				mox = sgp.raw
 				payload["sgp40_mox_raw"] = mox
+			except Exception:
+				pass
 
 		if Ambient_Sensor_On:
 			try:
@@ -451,6 +462,8 @@ while Weather_Station_On:
 				print("Lux:", lux)
 				payload["veml7700_ambient"] = ambient
 				payload["veml7700_lux"] = lux
+			except Exception:
+				pass
 
 		if BMP388_Sensor_On:
 			try:
@@ -460,6 +473,8 @@ while Weather_Station_On:
 				print('Altitude: {} meters'.format(bmp.altitude))
 				payload["bmp388_pressure_hpa"] = pressure
 				payload["bmp388_temperature_C"] = temp
+			except Exception:
+				pass
 
 		
 	#the LCD/display code will need to be rethought since it presents the data more slowly (scrolling through several screens) than the data is gathered.
