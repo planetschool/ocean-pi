@@ -193,14 +193,14 @@ with open("data_logger_{}.csv".format(start_time), "w") as data_file:
 
 while Weather_Station_On:
 	
+	data = [time.localtime().tm_mon, time.localtime().tm_mday, time.localtime().tm_year, time.localtime().tm_hour, time.localtime().tm_min, time.localtime().tm_sec]
+	
+	
 	current_char = ser.read()
-	print(current_char)
-	print(airdirections)
 	# check for equals sign
 	if current_char == b'c':
 		for lists in all_data:
 			lists.clear()
-		print(airdirections)
 		airdirection = ser.read(4)
 		airdirections.append(airdirection.decode('utf-8')[0:3])
 		airspeed1 = ser.read(4)
@@ -218,179 +218,179 @@ while Weather_Station_On:
 		barometric = ser.read(6)
 		barometrics.append(barometric.decode('utf-8')[1:6])
 
-# this part will depend on your specific needs.
-# in this example, we stop after 10 readings
-# check for stopping condition and set done = True
-#	if len(airdirections) >= 10:
-#		Weather_Station_On = False
-	for airdirection in range(len(airdirections)):
-		airdirections[airdirection] = int(airdirections[airdirection])
-				
-				
-	my_adval = ''.join(map(str, airdirections))
-	#print("This is the values" + my_adval)
-	my_int_ad = int(my_adval)
-	my_ad = (my_int_ad)
-	print ("Wind Direction:" + '%.2d' % my_ad + " Degrees")
-	if my_ad  == 0:
-	   my_dir_ad = "North"
-	   print (my_dir_ad)
-	elif my_ad == 45:
-	   my_dir_ad = "North East"
-	   print (my_dir_ad)
-	elif my_ad == 90:
-	   my_dir_ad = "East"
-	   print (my_dir_ad)
-	elif my_ad == 135:
-	   my_dir_ad = "South East"
-	   print (my_dir_ad)
-	elif my_ad == 180:
-	   my_dir_ad = "South"
-	   print (my_dir_ad)
-	elif my_ad == 225:
-	   my_dir_ad = "South West"
-	   print (my_dir_ad)
-	elif my_ad == 270:
-	   my_dir_ad = "West"
-	   print (my_dir_ad)
-	elif my_ad == 315:
-	   my_dir_ad = "North West"
-	   print (my_dir_ad)
-	else:
-	   print ("Something else happened")
+	# this part will depend on your specific needs.
+	# in this example, we stop after 10 readings
+	# check for stopping condition and set done = True
+	#	if len(airdirections) >= 10:
+	#		Weather_Station_On = False
+		for airdirection in range(len(airdirections)):
+			airdirections[airdirection] = int(airdirections[airdirection])
+					
+					
+		my_adval = ''.join(map(str, airdirections))
+		#print("This is the values" + my_adval)
+		my_int_ad = int(my_adval)
+		my_ad = (my_int_ad)
+		print ("Wind Direction:" + '%.2d' % my_ad + " Degrees")
+		if my_ad  == 0:
+		   my_dir_ad = "North"
+		   print (my_dir_ad)
+		elif my_ad == 45:
+		   my_dir_ad = "North East"
+		   print (my_dir_ad)
+		elif my_ad == 90:
+		   my_dir_ad = "East"
+		   print (my_dir_ad)
+		elif my_ad == 135:
+		   my_dir_ad = "South East"
+		   print (my_dir_ad)
+		elif my_ad == 180:
+		   my_dir_ad = "South"
+		   print (my_dir_ad)
+		elif my_ad == 225:
+		   my_dir_ad = "South West"
+		   print (my_dir_ad)
+		elif my_ad == 270:
+		   my_dir_ad = "West"
+		   print (my_dir_ad)
+		elif my_ad == 315:
+		   my_dir_ad = "North West"
+		   print (my_dir_ad)
+		else:
+		   print ("Something else happened")
 
-	##
-	##AirSpeedAvg1###
-	for airspeed1 in range(len(airspeed1s)):
-		airspeed1s[airspeed1] = int(airspeed1s[airspeed1])
-	my_as1val = ''.join(map(str, airspeed1s))
-	#print("This is the AS1 value" + my_as1val)
-	my_float_as1 = float(my_as1val)
-	my_as1_initial = (my_float_as1 * knot_conversion)
-	print ("Average Wind Speed(1min):" + '%.1f' % my_as1_initial + "kts")
+		##
+		##AirSpeedAvg1###
+		for airspeed1 in range(len(airspeed1s)):
+			airspeed1s[airspeed1] = int(airspeed1s[airspeed1])
+		my_as1val = ''.join(map(str, airspeed1s))
+		#print("This is the AS1 value" + my_as1val)
+		my_float_as1 = float(my_as1val)
+		my_as1_initial = (my_float_as1 * knot_conversion)
+		print ("Average Wind Speed(1min):" + '%.1f' % my_as1_initial + "kts")
 
-	###AirSpeedAvg2###
-	for airspeed5 in range(len(airspeed5s)):
-		airspeed5s[airspeed5] = int(airspeed5s[airspeed5])
-	my_as5val = ''.join(map(str, airspeed5s))
-	#print("This is the AS5 value" + my_as5val)
-	my_float_as2 = float(my_as5val)
-	my_as2_initial = (my_float_as2 * knot_conversion)
-	print ("Max Wind Speed(5min):" + '%.1f' % my_as2_initial + "kts")
+		###AirSpeedAvg2###
+		for airspeed5 in range(len(airspeed5s)):
+			airspeed5s[airspeed5] = int(airspeed5s[airspeed5])
+		my_as5val = ''.join(map(str, airspeed5s))
+		#print("This is the AS5 value" + my_as5val)
+		my_float_as2 = float(my_as5val)
+		my_as2_initial = (my_float_as2 * knot_conversion)
+		print ("Max Wind Speed(5min):" + '%.1f' % my_as2_initial + "kts")
 
-	###Temperature####
-	for temperature in range(len(temperatures)):
-		temperatures[temperature] = int(temperatures[temperature])
-	my_temperatureval = ''.join(map(str, temperatures))
-	#print("This is the Temperature value" + my_temperatureval)
-	my_float_temp = float(my_temperatureval)
-	print ("Temperature:" + '%.1f' % my_float_temp + "F")
+		###Temperature####
+		for temperature in range(len(temperatures)):
+			temperatures[temperature] = int(temperatures[temperature])
+		my_temperatureval = ''.join(map(str, temperatures))
+		#print("This is the Temperature value" + my_temperatureval)
+		my_float_temp = float(my_temperatureval)
+		print ("Temperature:" + '%.1f' % my_float_temp + "F")
 
-	###Rainfall 1H###
-	for rainfall1h in range(len(rainfall1hs)):
-		rainfall1hs[rainfall1h] = int(rainfall1hs[rainfall1h])
-	my_rainfall1hval = ''.join(map(str, rainfall1hs))
-	#print("This is the rainfall1h value" + my_rainfall1hval)
-	my_float_rf1h = float(my_rainfall1hval)
-	my_rf1h = (my_float_rf1h * 0.01)
-	print ("Rainfall(1hr):" + '%.1f' % my_rf1h + "in")
+		###Rainfall 1H###
+		for rainfall1h in range(len(rainfall1hs)):
+			rainfall1hs[rainfall1h] = int(rainfall1hs[rainfall1h])
+		my_rainfall1hval = ''.join(map(str, rainfall1hs))
+		#print("This is the rainfall1h value" + my_rainfall1hval)
+		my_float_rf1h = float(my_rainfall1hval)
+		my_rf1h = (my_float_rf1h * 0.01)
+		print ("Rainfall(1hr):" + '%.1f' % my_rf1h + "in")
 
-	###Rainfall 24H###
-	for rainfall24h in range(len(rainfall24hs)):
-		rainfall24hs[rainfall24h] = int(rainfall24hs[rainfall24h])
-	my_rainfall24hval = ''.join(map(str, rainfall24hs))
-	#print("This is the rainfall24h value" + my_rainfall24hval)
-	my_float_rf24h = float(my_rainfall24hval)
-	my_rf24h = (my_float_rf24h * 0.01)
-	print ("Rainfall(24hr):" + '%.1f' % my_rf24h + "in")
+		###Rainfall 24H###
+		for rainfall24h in range(len(rainfall24hs)):
+			rainfall24hs[rainfall24h] = int(rainfall24hs[rainfall24h])
+		my_rainfall24hval = ''.join(map(str, rainfall24hs))
+		#print("This is the rainfall24h value" + my_rainfall24hval)
+		my_float_rf24h = float(my_rainfall24hval)
+		my_rf24h = (my_float_rf24h * 0.01)
+		print ("Rainfall(24hr):" + '%.1f' % my_rf24h + "in")
 
-	###Humidity###
-	for humidity in range(len(humiditys)):
-		humiditys[humidity] = int(humiditys[humidity])
-	my_humidityval = ''.join(map(str, humiditys))
-	my_int_humidity = int(my_humidityval)
-	my_humidity = (my_int_humidity)
-	print ("Humidity:" + '%.1d' % my_humidity + "%")
+		###Humidity###
+		for humidity in range(len(humiditys)):
+			humiditys[humidity] = int(humiditys[humidity])
+		my_humidityval = ''.join(map(str, humiditys))
+		my_int_humidity = int(my_humidityval)
+		my_humidity = (my_int_humidity)
+		print ("Humidity:" + '%.1d' % my_humidity + "%")
 
-	###Barometric Pressure###
-	for barometric in range(len(barometrics)):
-		barometrics[barometric] = int(barometrics[barometric])
-	my_barometricval = ''.join(map(str, barometrics))
-	#print("value of barometer:" + my_barometricval)
-	my_float_barometric = float(my_barometricval)
-	my_barometric_total = (my_float_barometric / 10.00)
-	print ("Barometric Pressure:" + '%.1f' % my_barometric_total + "hPa")
-	
-	if Color_Sensor_On:
-		red = light_sensor.color_rgb_bytes[0]
-		green = light_sensor.color_rgb_bytes[1]
-		blue = light_sensor.color_rgb_bytes[2]
-		print("R:" + str(red) + " G:" + str(green) + " B:" + str(blue))
-		data.append([red, green, blue])
-
-	if BME280_Sensor_On:
-		BME_humidity = round(bme280.humidity, 1)
-		BME_pressure = round(bme280.pressure, 1)
-		BME_temp = round(bme280.temperature, 1)
-		print("BME_Temp: {}, BME_Pressure: {}, BME_Humidity: {}".format(BME_temp, BME_pressure, BME_humidity))
-		data.append([BME_temp, BME_humidity, BME_pressure])
+		###Barometric Pressure###
+		for barometric in range(len(barometrics)):
+			barometrics[barometric] = int(barometrics[barometric])
+		my_barometricval = ''.join(map(str, barometrics))
+		#print("value of barometer:" + my_barometricval)
+		my_float_barometric = float(my_barometricval)
+		my_barometric_total = (my_float_barometric / 10.00)
+		print ("Barometric Pressure:" + '%.1f' % my_barometric_total + "hPa")
 		
-	if CO2_Sensor_On:
-		if CO2_sensor.data_ready:
-			CO2_temp_C = round(CO2_sensor.temperature, 1)
-			CO2_humidity = round(CO2_sensor.relative_humidity, 1)
-			CO2_CO2 = CO2_sensor.CO2
-		CO2_temp_F = round(CO2_temp_C * (9/5) + 32, 1) 
-		print("CO2_Temp: {} *F".format(CO2_temp_F))
-		print("CO2: {} ppm".format(CO2_CO2))
-		print("CO2_Humid: {} %".format(CO2_humidity))
-		data.extend([CO2_temp_F, CO2_humidity, CO2_CO2])
-		
-	if Light_Sensor_On:
-		lux = round(Light_sensor.lux, 1)
-		visible = Light_sensor.visible
-		IR = Light_sensor.infrared
-		print("Brightness: {}, Visible Light: {}, Infrared Light: {}".format(lux, visible, IR))
-		data.extend([lux, visible, IR])
-
-	if Accel_Sensor_On:
-		print("Acceleration (m/s^2): X=%0.3f Y=%0.3f Z=%0.3f"%accel.acceleration)
-		print("Magnetometer (micro-Teslas)): X=%0.3f Y=%0.3f Z=%0.3f"%mag.magnetic)
-
-	if UV_Sensor_On:
-		print("UV:", ltr.uvs, "Ambient Light:", ltr.light)
-		print("UVI:", ltr.uvi, "Lux:", ltr.lux)
-
-	if Ambient_Sensor_On:
-		print("Ambient light:", veml7700.light)
-		print("Lux:", veml7700.lux)
-
-	if BMP388_Sensor_On:
-		print("Pressure: {:6.4f} hPa  Temperature: {:5.2f} *C".format(bmp.pressure, bmp.temperature,))
-		print('Altitude: {} meters'.format(bmp.altitude))
-    
-#the LCD/display code will need to be rethought since it presents the data more slowly (scrolling through several screens) than the data is gathered.
-	if LCD_On:
-		mylcd.lcd_clear()
-		if Light_Sensor_On:
-			mylcd.lcd_clear()
-			mylcd.lcd_display_string("Bright: {} Lux".format(lux), 1, 0)
-			mylcd.lcd_display_string("IR: {} , Vis: {}".format(IR, visible), 2, 0)
-			sleep(2)
-		if BME280_Sensor_On:
-			mylcd.lcd_clear()
-			mylcd.lcd_display_string("Press: {} hPa".format(BME_pressure), 1, 0)
-			mylcd.lcd_display_string("Humid: {} %".format(BME_humidity), 2, 0)
-			sleep(2)
-		if CO2_Sensor_On:
-			mylcd.lcd_clear()
-			mylcd.lcd_display_string("Temp: {} *F".format(CO2_temp_F), 1, 0)
-			mylcd.lcd_display_string("CO2: {} ppm".format(CO2_CO2), 2, 0) 
-			sleep(2)
-			mylcd.lcd_clear()
-			mylcd.lcd_display_string("Humid: {} %".format(CO2_humidity), 1, 0)
-			sleep(2)
 		if Color_Sensor_On:
+			red = light_sensor.color_rgb_bytes[0]
+			green = light_sensor.color_rgb_bytes[1]
+			blue = light_sensor.color_rgb_bytes[2]
+			print("R:" + str(red) + " G:" + str(green) + " B:" + str(blue))
+			data.append([red, green, blue])
+
+		if BME280_Sensor_On:
+			BME_humidity = round(bme280.humidity, 1)
+			BME_pressure = round(bme280.pressure, 1)
+			BME_temp = round(bme280.temperature, 1)
+			print("BME_Temp: {}, BME_Pressure: {}, BME_Humidity: {}".format(BME_temp, BME_pressure, BME_humidity))
+			data.append([BME_temp, BME_humidity, BME_pressure])
+			
+		if CO2_Sensor_On:
+			if CO2_sensor.data_ready:
+				CO2_temp_C = round(CO2_sensor.temperature, 1)
+				CO2_humidity = round(CO2_sensor.relative_humidity, 1)
+				CO2_CO2 = CO2_sensor.CO2
+			CO2_temp_F = round(CO2_temp_C * (9/5) + 32, 1) 
+			print("CO2_Temp: {} *F".format(CO2_temp_F))
+			print("CO2: {} ppm".format(CO2_CO2))
+			print("CO2_Humid: {} %".format(CO2_humidity))
+			data.extend([CO2_temp_F, CO2_humidity, CO2_CO2])
+			
+		if Light_Sensor_On:
+			lux = round(Light_sensor.lux, 1)
+			visible = Light_sensor.visible
+			IR = Light_sensor.infrared
+			print("Brightness: {}, Visible Light: {}, Infrared Light: {}".format(lux, visible, IR))
+			data.extend([lux, visible, IR])
+
+		if Accel_Sensor_On:
+			print("Acceleration (m/s^2): X=%0.3f Y=%0.3f Z=%0.3f"%accel.acceleration)
+			print("Magnetometer (micro-Teslas)): X=%0.3f Y=%0.3f Z=%0.3f"%mag.magnetic)
+
+		if UV_Sensor_On:
+			print("UV:", ltr.uvs, "Ambient Light:", ltr.light)
+			print("UVI:", ltr.uvi, "Lux:", ltr.lux)
+
+		if Ambient_Sensor_On:
+			print("Ambient light:", veml7700.light)
+			print("Lux:", veml7700.lux)
+
+		if BMP388_Sensor_On:
+			print("Pressure: {:6.4f} hPa  Temperature: {:5.2f} *C".format(bmp.pressure, bmp.temperature,))
+			print('Altitude: {} meters'.format(bmp.altitude))
+		
+	#the LCD/display code will need to be rethought since it presents the data more slowly (scrolling through several screens) than the data is gathered.
+		if LCD_On:
 			mylcd.lcd_clear()
-			mylcd.lcd_display_string("R:" + str(red) + " G:" + str(green) + " B:" + str(blue), 1, 0)
-			sleep(2)
+			if Light_Sensor_On:
+				mylcd.lcd_clear()
+				mylcd.lcd_display_string("Bright: {} Lux".format(lux), 1, 0)
+				mylcd.lcd_display_string("IR: {} , Vis: {}".format(IR, visible), 2, 0)
+				sleep(2)
+			if BME280_Sensor_On:
+				mylcd.lcd_clear()
+				mylcd.lcd_display_string("Press: {} hPa".format(BME_pressure), 1, 0)
+				mylcd.lcd_display_string("Humid: {} %".format(BME_humidity), 2, 0)
+				sleep(2)
+			if CO2_Sensor_On:
+				mylcd.lcd_clear()
+				mylcd.lcd_display_string("Temp: {} *F".format(CO2_temp_F), 1, 0)
+				mylcd.lcd_display_string("CO2: {} ppm".format(CO2_CO2), 2, 0) 
+				sleep(2)
+				mylcd.lcd_clear()
+				mylcd.lcd_display_string("Humid: {} %".format(CO2_humidity), 1, 0)
+				sleep(2)
+			if Color_Sensor_On:
+				mylcd.lcd_clear()
+				mylcd.lcd_display_string("R:" + str(red) + " G:" + str(green) + " B:" + str(blue), 1, 0)
+				sleep(2)
