@@ -19,6 +19,7 @@ First issue is installing the dependencies (as usual). After the first step of c
 3) pip3 install board
 4) pip3 install smbus2
 5) pip3 install RPi.GPIO
+6) pip3 install paho-mqtt #starting to get into the network aspect of this project
 
 When setting up the Pi, ensure that SSH, I2C, and Serial are all enabled using "sudo raspi-config"
 
