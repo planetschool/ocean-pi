@@ -102,13 +102,13 @@ data_header = ["Month", "Day", "Year", "Hour", "Minute", "Second"]
 ### Mox Gas Sensor
 Gas_Sensor_On = True
 if Gas_Sensor_On:
-	import adafruit_sgp40
-	try: 
-		sgp = adafruit_sgp40.SGP40(i2c, int(sgp40_mox_gas_address))
-		print("Raw gas: ", sgp.raw)
-	except Exception as e:
-    	print("SGP40 read failed:", e)
-    	sgp40_mox_raw = None
+    import adafruit_sgp40
+    try:
+        sgp = adafruit_sgp40.SGP40(i2c, int(sgp40_mox_gas_address))
+        print("Raw gas: ", sgp.raw)
+    except Exception as e:
+        print("SGP40 read failed:", e)
+        sgp40_mox_raw = None
 
 ### Color Sensor TCS34725
 Color_Sensor_On = False
