@@ -271,12 +271,12 @@ while Weather_Station_On:
 	#	if len(airdirections) >= 10:
 	#		Weather_Station_On = False
 		for airdirection in range(len(airdirections)):
-			try:
-    			cleaned = ''.join(filter(str.isdigit, airdirections[airdirection]))
-   				airdirections[airdirection] = int(cleaned)
-			except ValueError:
-    			print(f"Warning: Could not parse wind direction value: {airdirections[airdirection]}")
-    			airdirections[airdirection] = None  # or set to a default like 0
+		    try:
+		        cleaned = ''.join(filter(str.isdigit, airdirections[airdirection]))
+		        airdirections[airdirection] = int(cleaned)
+		    except ValueError:
+		        print(f"Warning: Could not parse wind direction value: {airdirections[airdirection]}")
+		        airdirections[airdirection] = None  # or set to a default like 0
 					
 					
 		my_adval = ''.join(map(str, airdirections))
