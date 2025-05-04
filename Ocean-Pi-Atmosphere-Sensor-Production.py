@@ -106,9 +106,9 @@ if Gas_Sensor_On:
 	try: 
 		sgp = adafruit_sgp40.SGP40(i2c, int(sgp40_mox_gas_address))
 		print("Raw gas: ", sgp.raw)
-	except OSError as e:
-        print(f"SGP40 read failed: {e}")
-        raw_gas = None
+	except Exception as e:
+    	print("SGP40 read failed:", e)
+    	sgp40_mox_raw = None
 
 ### Color Sensor TCS34725
 Color_Sensor_On = False
