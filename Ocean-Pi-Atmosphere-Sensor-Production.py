@@ -202,7 +202,8 @@ while True:
 
 
 while Weather_Station_On:
-	
+
+	run_weather_station = True
 	payload = {
 		"device_id": DEVICE_ID,
 		"timestamp": datetime.datetime.utcnow().isoformat() + "Z",
@@ -277,110 +278,111 @@ while Weather_Station_On:
 		    except ValueError:
 		        print(f"Warning: Could not parse wind direction value: {airdirections[airdirection]}")
 		        airdirections[airdirection] = None  # or set to a default like 0
+		        run_weather_station = False
 					
-					
-		my_adval = ''.join(map(str, airdirections))
-		#print("This is the values" + my_adval)
-		my_int_ad = int(my_adval)
-		my_ad = (my_int_ad)
-		print ("Wind Direction:" + '%.2d' % my_ad + " Degrees")
-		payload["wxstation_wind_direction_deg"] = my_ad
-		if my_ad  == 0:
-		   my_dir_ad = "North"
-		   print (my_dir_ad)
-		elif my_ad == 45:
-		   my_dir_ad = "North East"
-		   print (my_dir_ad)
-		elif my_ad == 90:
-		   my_dir_ad = "East"
-		   print (my_dir_ad)
-		elif my_ad == 135:
-		   my_dir_ad = "South East"
-		   print (my_dir_ad)
-		elif my_ad == 180:
-		   my_dir_ad = "South"
-		   print (my_dir_ad)
-		elif my_ad == 225:
-		   my_dir_ad = "South West"
-		   print (my_dir_ad)
-		elif my_ad == 270:
-		   my_dir_ad = "West"
-		   print (my_dir_ad)
-		elif my_ad == 315:
-		   my_dir_ad = "North West"
-		   print (my_dir_ad)
-		else:
-		   my_dir_ad = "Null"
-		   print ("Null")
-		payload["wxstation_wind_direction_cardinal"] = my_dir_ad
-		
-		# --- AirSpeed 1MinAvg --- #
-		for airspeed1 in range(len(airspeed1s)):
-			airspeed1s[airspeed1] = int(airspeed1s[airspeed1])
-		my_as1val = ''.join(map(str, airspeed1s))
-		#print("This is the AS1 value" + my_as1val)
-		my_float_as1 = float(my_as1val)
-		my_as1_initial = (my_float_as1 * knot_conversion)
-		print ("Average Wind Speed(1min):" + '%.1f' % my_as1_initial + "kts")
-		payload["wxstation_wind_speed_1min_avg_kts"] = my_as1_initial
+		if run_weather_station:		
+			my_adval = ''.join(map(str, airdirections))
+			#print("This is the values" + my_adval)
+			my_int_ad = int(my_adval)
+			my_ad = (my_int_ad)
+			print ("Wind Direction:" + '%.2d' % my_ad + " Degrees")
+			payload["wxstation_wind_direction_deg"] = my_ad
+			if my_ad  == 0:
+			   my_dir_ad = "North"
+			   print (my_dir_ad)
+			elif my_ad == 45:
+			   my_dir_ad = "North East"
+			   print (my_dir_ad)
+			elif my_ad == 90:
+			   my_dir_ad = "East"
+			   print (my_dir_ad)
+			elif my_ad == 135:
+			   my_dir_ad = "South East"
+			   print (my_dir_ad)
+			elif my_ad == 180:
+			   my_dir_ad = "South"
+			   print (my_dir_ad)
+			elif my_ad == 225:
+			   my_dir_ad = "South West"
+			   print (my_dir_ad)
+			elif my_ad == 270:
+			   my_dir_ad = "West"
+			   print (my_dir_ad)
+			elif my_ad == 315:
+			   my_dir_ad = "North West"
+			   print (my_dir_ad)
+			else:
+			   my_dir_ad = "Null"
+			   print ("Null")
+			payload["wxstation_wind_direction_cardinal"] = my_dir_ad
+			
+			# --- AirSpeed 1MinAvg --- #
+			for airspeed1 in range(len(airspeed1s)):
+				airspeed1s[airspeed1] = int(airspeed1s[airspeed1])
+			my_as1val = ''.join(map(str, airspeed1s))
+			#print("This is the AS1 value" + my_as1val)
+			my_float_as1 = float(my_as1val)
+			my_as1_initial = (my_float_as1 * knot_conversion)
+			print ("Average Wind Speed(1min):" + '%.1f' % my_as1_initial + "kts")
+			payload["wxstation_wind_speed_1min_avg_kts"] = my_as1_initial
 
-		# --- AirSpeed 5MinAvg --- #
-		for airspeed5 in range(len(airspeed5s)):
-			airspeed5s[airspeed5] = int(airspeed5s[airspeed5])
-		my_as5val = ''.join(map(str, airspeed5s))
-		#print("This is the AS5 value" + my_as5val)
-		my_float_as2 = float(my_as5val)
-		my_as2_initial = (my_float_as2 * knot_conversion)
-		print ("Max Wind Speed(5min):" + '%.1f' % my_as2_initial + "kts")
-		payload["wxstation_wind_speed_5min_avg_kts"] = my_as2_initial
+			# --- AirSpeed 5MinAvg --- #
+			for airspeed5 in range(len(airspeed5s)):
+				airspeed5s[airspeed5] = int(airspeed5s[airspeed5])
+			my_as5val = ''.join(map(str, airspeed5s))
+			#print("This is the AS5 value" + my_as5val)
+			my_float_as2 = float(my_as5val)
+			my_as2_initial = (my_float_as2 * knot_conversion)
+			print ("Max Wind Speed(5min):" + '%.1f' % my_as2_initial + "kts")
+			payload["wxstation_wind_speed_5min_avg_kts"] = my_as2_initial
 
-		# --- Temperature --- #
-		for temperature in range(len(temperatures)):
-			temperatures[temperature] = int(temperatures[temperature])
-		my_temperatureval = ''.join(map(str, temperatures))
-		#print("This is the Temperature value" + my_temperatureval)
-		my_float_temp = float(my_temperatureval)
-		print ("Temperature:" + '%.1f' % my_float_temp + "F")
-		payload["wxstation_temperature_F"] = my_float_temp
+			# --- Temperature --- #
+			for temperature in range(len(temperatures)):
+				temperatures[temperature] = int(temperatures[temperature])
+			my_temperatureval = ''.join(map(str, temperatures))
+			#print("This is the Temperature value" + my_temperatureval)
+			my_float_temp = float(my_temperatureval)
+			print ("Temperature:" + '%.1f' % my_float_temp + "F")
+			payload["wxstation_temperature_F"] = my_float_temp
 
-		# --- Rainfall 1H --- #
-		for rainfall1h in range(len(rainfall1hs)):
-			rainfall1hs[rainfall1h] = int(rainfall1hs[rainfall1h])
-		my_rainfall1hval = ''.join(map(str, rainfall1hs))
-		#print("This is the rainfall1h value" + my_rainfall1hval)
-		my_float_rf1h = float(my_rainfall1hval)
-		my_rf1h = (my_float_rf1h * 0.01)
-		print ("Rainfall(1hr):" + '%.1f' % my_rf1h + "in")
-		payload["wxstation_rain_last_1hour_.01in"] = my_rf1h
+			# --- Rainfall 1H --- #
+			for rainfall1h in range(len(rainfall1hs)):
+				rainfall1hs[rainfall1h] = int(rainfall1hs[rainfall1h])
+			my_rainfall1hval = ''.join(map(str, rainfall1hs))
+			#print("This is the rainfall1h value" + my_rainfall1hval)
+			my_float_rf1h = float(my_rainfall1hval)
+			my_rf1h = (my_float_rf1h * 0.01)
+			print ("Rainfall(1hr):" + '%.1f' % my_rf1h + "in")
+			payload["wxstation_rain_last_1hour_.01in"] = my_rf1h
 
-		# --- Rainfall 24H --- #
-		for rainfall24h in range(len(rainfall24hs)):
-			rainfall24hs[rainfall24h] = int(rainfall24hs[rainfall24h])
-		my_rainfall24hval = ''.join(map(str, rainfall24hs))
-		#print("This is the rainfall24h value" + my_rainfall24hval)
-		my_float_rf24h = float(my_rainfall24hval)
-		my_rf24h = (my_float_rf24h * 0.01)
-		print ("Rainfall(24hr):" + '%.1f' % my_rf24h + "in")
-		payload["wxstation_rain_last_24hours_.01in"] = my_rf24h
+			# --- Rainfall 24H --- #
+			for rainfall24h in range(len(rainfall24hs)):
+				rainfall24hs[rainfall24h] = int(rainfall24hs[rainfall24h])
+			my_rainfall24hval = ''.join(map(str, rainfall24hs))
+			#print("This is the rainfall24h value" + my_rainfall24hval)
+			my_float_rf24h = float(my_rainfall24hval)
+			my_rf24h = (my_float_rf24h * 0.01)
+			print ("Rainfall(24hr):" + '%.1f' % my_rf24h + "in")
+			payload["wxstation_rain_last_24hours_.01in"] = my_rf24h
 
-		# --- Humidity --- #
-		for humidity in range(len(humiditys)):
-			humiditys[humidity] = int(humiditys[humidity])
-		my_humidityval = ''.join(map(str, humiditys))
-		my_int_humidity = int(my_humidityval)
-		my_humidity = (my_int_humidity)
-		print ("Humidity:" + '%.1d' % my_humidity + "%")
-		payload["wxstation_humidity_%"] = my_humidity
+			# --- Humidity --- #
+			for humidity in range(len(humiditys)):
+				humiditys[humidity] = int(humiditys[humidity])
+			my_humidityval = ''.join(map(str, humiditys))
+			my_int_humidity = int(my_humidityval)
+			my_humidity = (my_int_humidity)
+			print ("Humidity:" + '%.1d' % my_humidity + "%")
+			payload["wxstation_humidity_%"] = my_humidity
 
-		# --- Barometric Pressure --- #
-		for barometric in range(len(barometrics)):
-			barometrics[barometric] = int(barometrics[barometric])
-		my_barometricval = ''.join(map(str, barometrics))
-		#print("value of barometer:" + my_barometricval)
-		my_float_barometric = float(my_barometricval)
-		my_barometric_total = (my_float_barometric / 10.00)
-		print ("Barometric Pressure:" + '%.1f' % my_barometric_total + "hPa")
-		payload["wxstation_pressure_0.1 hpa"] = my_barometric_total
+			# --- Barometric Pressure --- #
+			for barometric in range(len(barometrics)):
+				barometrics[barometric] = int(barometrics[barometric])
+			my_barometricval = ''.join(map(str, barometrics))
+			#print("value of barometer:" + my_barometricval)
+			my_float_barometric = float(my_barometricval)
+			my_barometric_total = (my_float_barometric / 10.00)
+			print ("Barometric Pressure:" + '%.1f' % my_barometric_total + "hPa")
+			payload["wxstation_pressure_0.1 hpa"] = my_barometric_total
 		
 		if Color_Sensor_On:
 			try:
