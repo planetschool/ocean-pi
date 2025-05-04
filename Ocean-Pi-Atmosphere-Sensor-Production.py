@@ -103,8 +103,12 @@ data_header = ["Month", "Day", "Year", "Hour", "Minute", "Second"]
 Gas_Sensor_On = True
 if Gas_Sensor_On:
 	import adafruit_sgp40
-	sgp = adafruit_sgp40.SGP40(i2c, int(sgp40_mox_gas_address))
-	print("Raw gas: ", sgp.raw)
+	try: 
+		sgp = adafruit_sgp40.SGP40(i2c, int(sgp40_mox_gas_address))
+		print("Raw gas: ", sgp.raw)
+	except OSError as e:
+        print(f"SGP40 read failed: {e}")
+        raw_gas = None
 
 ### Color Sensor TCS34725
 Color_Sensor_On = False
@@ -267,7 +271,12 @@ while Weather_Station_On:
 	#	if len(airdirections) >= 10:
 	#		Weather_Station_On = False
 		for airdirection in range(len(airdirections)):
-			airdirections[airdirection] = int(airdirections[airdirection])
+			try:
+    			cleaned = ''.join(filter(str.isdigit, airdirections[airdirection]))
+   				airdirections[airdirection] = int(cleaned)
+			except ValueError:
+    			print(f"Warning: Could not parse wind direction value: {airdirections[airdirection]}")
+    			airdirections[airdirection] = None  # or set to a default like 0
 					
 					
 		my_adval = ''.join(map(str, airdirections))
