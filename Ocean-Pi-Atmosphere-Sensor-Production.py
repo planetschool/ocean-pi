@@ -30,7 +30,7 @@ pip3 install adafruit-circuitpython-veml7700
 
 # --- Network Settings --- #
 DEVICE_ID = "atmosphere_node_1"
-MQTT_BROKER = "localhost"
+MQTT_BROKER = "192.168.1.77"
 MQTT_PORT = 1883
 MQTT_TOPIC = "oceanpi/atmosphere"
 
@@ -49,7 +49,7 @@ sgp40_mox_gas_address = 0x59 #present but does not show in i2cdetect for some re
 
 # --- UART Settings --- #
 ser = serial.Serial(
-	port="/dev/ttyAMA0",
+	port="/dev/serial0",
 	baudrate = 9600,
 	parity=serial.PARITY_NONE,
 	stopbits=serial.STOPBITS_ONE,
