@@ -266,6 +266,7 @@ while Weather_Station_On:
 		barometric = ser.read(6)
 		barometrics.append(barometric.decode('utf-8')[1:6])
 
+		print(airdirections, airspeed1s, airspeed5s, temperatures, rainfall1hs, rainfall24hs, humiditys, barometrics)
 	# this part will depend on your specific needs.
 	# in this example, we stop after 10 readings
 	# check for stopping condition and set done = True
