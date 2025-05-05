@@ -1,0 +1,6 @@
+# oceanpi-frontend/render.yaml
+static:
+  routes:
+    - type: rewrite
+      source: /.*    # Match all paths
+      destination: /index.html
