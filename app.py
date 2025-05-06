@@ -58,3 +58,22 @@ mqtt_client.loop_start()
 @app.route("/")
 def index():
     return "Ocean Pi Flask Backend is running!"
+
+@app.route("/readings", methods=["GET"])
+def get_readings():
+    session = Session()
+    try:
+        # Optional: Filter by topic, limit results, etc.
+        readings = session.query(SensorReading).order_by(SensorReading.timestamp.desc()).limit(20).all()
+        result = [
+            {
+                "id": r.id,
+                "topic": r.topic,
+                "payload": r.payload,
+                "timestamp": r.timestamp.isoformat()
+            }
+            for r in readings
+        ]
+        return jsonify(result)
+    finally:
+        session.close()
