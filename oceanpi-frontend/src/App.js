@@ -52,33 +52,7 @@ function App() {
         </div>
       </div>
 
-      <h2>Atmosphere Sensor Data</h2>
-      {!atmosphereData ? (
-        <p>Loading...</p>
-      ) : (
-        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-          <div className="card">
-            <h3>Temperature</h3>
-            <p>{atmosphereData.scd41_temperature_F} °F</p>
-          </div>
-          <div className="card">
-            <h3>Humidity</h3>
-            <p>{atmosphereData.scd41_humidity_} %</p>
-          </div>
-          <div className="card">
-            <h3>CO₂</h3>
-            <p>{atmosphereData.scd41_co2_ppm} ppm</p>
-          </div>
-          <div className="card">
-            <h3>Pressure</h3>
-            <p>{atmosphereData.bmp388_pressure_hpa} hPa</p>
-          </div>
-          <div className="card">
-            <h3>Light</h3>
-            <p>{atmosphereData.tsl2591_lux} lux</p>
-          </div>
-        </div>
-      )}
+<SensorFeed />
 
       <h2 style={{ marginTop: "2rem" }}>SignalK Data</h2>
       {!signalkData ? (
