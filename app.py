@@ -67,6 +67,7 @@ mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
 mqtt_client.connect(mqtt_broker, mqtt_port)
 mqtt_client.loop_start()
+mqtt_client.on_disconnect = on_disconnect
 
 @app.route("/")
 def index():
