@@ -14,7 +14,7 @@ CORS(app)
 
 # === PostgreSQL connection ===
 DATABASE_URL = os.environ.get("DATABASE_URL")
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 Base = declarative_base()
 
 class SensorReading(Base):
@@ -51,14 +51,18 @@ def on_disconnect(client, userdata, rc):
 
 def on_message(client, userdata, msg):
     print(f"Received message on {msg.topic}: {msg.payload.decode()}")
-    session = Session()
-    reading = SensorReading(
-        topic=msg.topic,
-        payload=msg.payload.decode()
-    )
-    session.add(reading)
-    session.commit()
-    session.close()
+    for attempt in range(3):
+        try:
+            session = Session()
+            reading = SensorReading(topic=msg.topic, payload=msg.payload.decode())
+            session.add(reading)
+            session.commit()
+            break
+        except Exception as e:
+            print(f"DB write failed on attempt {attempt+1}: {e}")
+            time.sleep(2)
+        finally:
+            session.close()
 
 mqtt_client = mqtt.Client()
 mqtt_client.username_pw_set(mqtt_username, mqtt_password)
