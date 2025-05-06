@@ -33,8 +33,20 @@ mqtt_username = os.environ.get("MQTT_USERNAME")
 mqtt_password = os.environ.get("MQTT_PASSWORD")
 
 def on_connect(client, userdata, flags, rc):
-    print("MQTT connected with result code", rc)
+    print("✅ MQTT connected with result code", rc)
     client.subscribe("oceanpi/#")
+
+def on_disconnect(client, userdata, rc):
+    print("❌ MQTT disconnected with result code", rc)
+    if rc != 0:
+        while True:
+            try:
+                print("🔄 Trying to reconnect to MQTT broker...")
+                client.reconnect()
+                break
+            except Exception as e:
+                print("Reconnect failed:", e)
+                time.sleep(5)
 
 def on_message(client, userdata, msg):
     print(f"Received message on {msg.topic}: {msg.payload.decode()}")
