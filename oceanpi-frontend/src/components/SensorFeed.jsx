@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 
 const SensorFeed = () => {
-  const [readings, setReadings] = useState([]);
+  const [latestPayload, setLatestPayload] = useState(null);
   const [error, setError] = useState(null);
 
   const fetchReadings = async () => {
@@ -9,9 +9,12 @@ const SensorFeed = () => {
       const response = await fetch("https://flask-backend-y1v3.onrender.com/readings");
       if (!response.ok) throw new Error("Failed to fetch readings");
       const data = await response.json();
-      setReadings(data);
+
+      const parsed = JSON.parse(data[0].payload); // assume newest reading
+      setLatestPayload(parsed);
     } catch (err) {
-      setError(err.message);
+      console.error(err);
+      setError("Failed to load sensor data");
     }
   };
 
@@ -22,29 +25,21 @@ const SensorFeed = () => {
   }, []);
 
   return (
-    <div style={{ marginTop: "2rem" }}>
-      <h2>MQTT Sensor Stream</h2>
+    <div style={{ marginBottom: "2rem" }}>
+      <h2>Atmosphere Sensor Data (Live MQTT)</h2>
       {error && <p style={{ color: "red" }}>{error}</p>}
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th style={{ border: "1px solid #ccc", padding: "8px" }}>Timestamp</th>
-            <th style={{ border: "1px solid #ccc", padding: "8px" }}>Topic</th>
-            <th style={{ border: "1px solid #ccc", padding: "8px" }}>Payload</th>
-          </tr>
-        </thead>
-        <tbody>
-          {readings.map((r) => (
-            <tr key={r.id}>
-              <td style={{ border: "1px solid #ccc", padding: "8px" }}>
-                {new Date(r.timestamp).toLocaleString()}
-              </td>
-              <td style={{ border: "1px solid #ccc", padding: "8px" }}>{r.topic}</td>
-              <td style={{ border: "1px solid #ccc", padding: "8px" }}>{r.payload}</td>
-            </tr>
+      {!latestPayload ? (
+        <p>Loading...</p>
+      ) : (
+        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+          {Object.entries(latestPayload).map(([key, value]) => (
+            <div key={key} className="card">
+              <h3>{key}</h3>
+              <p>{value}</p>
+            </div>
           ))}
-        </tbody>
-      </table>
+        </div>
+      )}
     </div>
   );
 };
