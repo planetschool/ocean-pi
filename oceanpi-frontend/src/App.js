@@ -9,7 +9,7 @@ function App() {
     const fetchAtmosphereData = async () => {
       try {
         const response = await axios.get(
-          "https://ocean-pi-backend.onrender.com/readings"
+          "https://flask-backend-y1v3.onrender.com/readings"
         );
         setAtmosphereData(response.data);
         setError(null);
