@@ -4,16 +4,10 @@ import "./App.css";
 import SensorFeed from "./components/SensorFeed";
 
 function App() {
-  const [atmosphereData, setAtmosphereData] = useState(null);
   const [signalkData, setSignalkData] = useState(null);
 
   useEffect(() => {
     const fetchData = () => {
-      axios
-        .get("http://192.168.1.77:5000/api/atmosphere")
-        .then((res) => setAtmosphereData(res.data))
-        .catch((err) => console.error("Atmosphere error:", err));
-
       axios
         .get("http://192.168.1.77:5000/api/signalk")
         .then((res) => setSignalkData(res.data))
@@ -52,7 +46,8 @@ function App() {
         </div>
       </div>
 
-<SensorFeed />
+      <h2>Atmosphere Sensor Data</h2>
+      <SensorFeed />
 
       <h2 style={{ marginTop: "2rem" }}>SignalK Data</h2>
       {!signalkData ? (
