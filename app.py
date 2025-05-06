@@ -74,18 +74,31 @@ def index():
     return "Ocean Pi Flask Backend is running!"
 
 @app.route("/readings", methods=["GET"])
-@app.route("/readings", methods=["GET"])
 def get_readings():
     session = Session()
     try:
-        latest = session.query(SensorReading) \
-            .order_by(SensorReading.timestamp.desc()) \
-            .first()
-        
-        if latest:
-            payload = json.loads(latest.payload)
-            return jsonify(payload)
-        else:
-            return jsonify({"message": "No data available"}), 404
+        readings = (
+            session.query(SensorReading)
+            .filter(SensorReading.topic == "oceanpi/atmosphere")
+            .order_by(SensorReading.timestamp.desc())
+            .limit(1)
+            .all()
+        )
+
+        result = []
+        for r in readings:
+            try:
+                payload = json.loads(r.payload)
+            except json.JSONDecodeError:
+                payload = {"error": "Invalid JSON in payload"}
+
+            result.append({
+                "id": r.id,
+                "topic": r.topic,
+                "payload": payload,  # now an object, not a string
+                "timestamp": r.timestamp.isoformat()
+            })
+
+        return jsonify(result)
     finally:
         session.close()
