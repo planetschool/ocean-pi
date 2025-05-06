@@ -3,4 +3,5 @@ flask-cors
 paho-mqtt
 sqlalchemy
 psycopg2-binary
-python-dotenv  # optional, for local dev
+gunicorn
+python-dotenv
