@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "./App.css";
+import SensorFeed from "./components/SensorFeed";
 
 function App() {
   const [atmosphereData, setAtmosphereData] = useState(null);
