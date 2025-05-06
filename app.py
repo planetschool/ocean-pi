@@ -34,7 +34,7 @@ mqtt_password = os.environ.get("MQTT_PASSWORD")
 
 def on_connect(client, userdata, flags, rc):
     print("MQTT connected with result code", rc)
-    client.subscribe("oceanpi/sensors/#")
+    client.subscribe("oceanpi/#")
 
 def on_message(client, userdata, msg):
     print(f"Received message on {msg.topic}: {msg.payload.decode()}")
