@@ -1,85 +1,60 @@
-import os
-from datetime import datetime
-from flask import Flask, jsonify
+from flask import Flask
 from flask_cors import CORS
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
+import paho.mqtt.client as mqtt
+import json
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import paho.mqtt.client as mqtt
+from datetime import datetime
+import os
 
-# Initialize Flask app
 app = Flask(__name__)
 CORS(app)
 
-# Configure database connection
+# === PostgreSQL connection ===
 DATABASE_URL = os.environ.get("DATABASE_URL")
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL environment variable not set")
-
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-SessionLocal = sessionmaker(bind=engine)
+engine = create_engine(DATABASE_URL)
 Base = declarative_base()
 
-# Define MQTTMessage model
-class MQTTMessage(Base):
-    __tablename__ = "mqtt_messages"
-    id = Column(Integer, primary_key=True, index=True)
-    topic = Column(String(255), nullable=False)
-    payload = Column(Text, nullable=False)
+class SensorReading(Base):
+    __tablename__ = 'sensor_readings'
+    id = Column(Integer, primary_key=True)
+    topic = Column(String)
+    payload = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(engine)
+Session = sessionmaker(bind=engine)
 
-# MQTT client setup
-MQTT_BROKER = os.environ.get("MQTT_BROKER", "localhost")
-MQTT_PORT = int(os.environ.get("MQTT_PORT", 1883))
-MQTT_TOPICS = os.environ.get("MQTT_TOPICS", "#")  # Subscribe to all topics by default
+# === MQTT Setup ===
+mqtt_broker = os.environ.get("MQTT_BROKER")
+mqtt_port = 8883
+mqtt_username = os.environ.get("MQTT_USERNAME")
+mqtt_password = os.environ.get("MQTT_PASSWORD")
 
 def on_connect(client, userdata, flags, rc):
-    if rc == 0:
-        print("Connected to MQTT Broker")
-        client.subscribe(MQTT_TOPICS)
-    else:
-        print(f"Failed to connect, return code {rc}")
+    print("MQTT connected with result code", rc)
+    client.subscribe("oceanpi/sensors/#")
 
 def on_message(client, userdata, msg):
-    session = SessionLocal()
-    try:
-        message = MQTTMessage(topic=msg.topic, payload=msg.payload.decode())
-        session.add(message)
-        session.commit()
-    except Exception as e:
-        print(f"Error saving message: {e}")
-        session.rollback()
-    finally:
-        session.close()
+    print(f"Received message on {msg.topic}: {msg.payload.decode()}")
+    session = Session()
+    reading = SensorReading(
+        topic=msg.topic,
+        payload=msg.payload.decode()
+    )
+    session.add(reading)
+    session.commit()
+    session.close()
 
 mqtt_client = mqtt.Client()
+mqtt_client.username_pw_set(mqtt_username, mqtt_password)
+mqtt_client.tls_set()
 mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
-mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60)
+mqtt_client.connect(mqtt_broker, mqtt_port)
 mqtt_client.loop_start()
 
-# API endpoint to retrieve messages
-@app.route("/api/messages", methods=["GET"])
-def get_messages():
-    session = SessionLocal()
-    try:
-        messages = session.query(MQTTMessage).order_by(MQTTMessage.timestamp.desc()).limit(100).all()
-        return jsonify([
-            {
-                "id": msg.id,
-                "topic": msg.topic,
-                "payload": msg.payload,
-                "timestamp": msg.timestamp.isoformat()
-            } for msg in messages
-        ])
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        session.close()
-
-# Run the app
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+@app.route("/")
+def index():
+    return "Ocean Pi Flask Backend is running!"
