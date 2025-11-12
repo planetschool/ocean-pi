@@ -8,10 +8,10 @@ Code, guides, and samples to help you run your code at sea aboard the Planet Sch
 4) RPi Zero 2W attached to the ocean sensor array mounted midships at the science station.
 5) RPi Zero 2W attached to a camera, mounted at the tip of the bowsprit facing aft (this one will be challenging, but the footage will look awesome).
 
-Before creating my virtual environment, there are a few system-wide packages to install:
-"sudo apt update"
-"sudo apt install python3-dev python3-pip libffi-dev build-essential"
-"sudo apt install -y i2c-tools"
+Before creating my virtual environment, there are a few system-wide packages to install:\
+"sudo apt update"\
+"sudo apt install python3-dev python3-pip libffi-dev build-essential"\
+"sudo apt install -y i2c-tools"\
 
 First issue is installing the dependencies (as usual). After the first step of creating the virtual environment using "python -m venv venv-ocean-pi" inside my root folder "planetschool," I ran "source venv-ocean-pi/bin/activate". Here are the dependencies I have installed:
 1) pip3 install gpiozero
