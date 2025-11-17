@@ -18,11 +18,11 @@ in the home directory (/planetschool, on our pi)
 To activate, run 'source venv-ocean-pi/bin/activate'
 
 Depending on the sensors you choose to install on your buoy, the following sensor packages are required to be installed inside the Virtual Environment (venv-ocean-pi) before running this program:
+pip3 install adafruit-circuitpython-sgp40
+pip3 install adafruit-circuitpython-bmp3xx
 pip3 install adafruit-circuitpython-scd4x
 pip3 install adafruit-circuitpython-tsl2591
 pip3 install adafruit-circuitpython-ltr390
-pip3 install adafruit-circuitpython-bmp3xx
-pip3 install adafruit-circuitpython-sgp40
 pip3 install adafruit-circuitpython-lis2mdl
 pip3 install adafruit-circuitpython-lsm303-accel
 pip3 install adafruit-circuitpython-veml7700
@@ -30,9 +30,15 @@ pip3 install adafruit-circuitpython-veml7700
 
 # --- Sensor Selection --- #
 LCD_On = False 
-Gas_Sensor_On = True		#spg40 sensor
-Color_Sensor_On = False		#tcs34725 sensor
-
+Gas_Sensor_On = True					#spg40 sensor
+Color_Sensor_On = False					#tcs34725 sensor
+Temp_Press_Humidity_Sensor_On = False	#bme280 sensor  
+Precision_Press_Temp_Sensor_On = True	#bmp388 sensor NOTE: uses i2c address 0x77, so cannot be attached to the same pi as BME280
+CO2_Sensor_On = True					#scd41 sensor
+Light_Sensor_On = True					#tsl2590 sensor
+Accel_Magnet_Sensor_On = True			#lsm303 sensor
+UV_Sensor_On = True						#ltr390 sensor
+Ambient_Sensor_On = True				#veml7700 sensor
 
 # --- Network Settings --- #
 DEVICE_ID = "atmosphere_node_1"
@@ -42,6 +48,7 @@ MQTT_TOPIC = "oceanpi/atmosphere"
 
 # --- I2C Settings --- #
 i2c_port = 1
+sgp40_mox_gas_address = 0x59 #present but does not show in i2cdetect for some reason
 tcs34725_RGB_address = 0x29 #present
 bme280_temp_pres_hum_address = 0x77 #present? or bmp388?
 scd41_co2_address = 0x62 #present
@@ -51,8 +58,6 @@ ltr390_lightUV_address = 0x53 #present
 veml7700_light_address = 0x10 #present
 lsm303agr_accel_magnet_address = 0x19 + 0x1e #present and unsure of why two addresses
 bmp388_precision_alt_temp_pres_address = 0x77 #present? or bme280?
-sgp40_mox_gas_address = 0x59 #present but does not show in i2cdetect for some reason
-
 
 #### LCD Display                                                                                                   
 if LCD_On:
@@ -64,12 +69,11 @@ if LCD_On:
 
 
 #### Non-Weather Station Sensors
-
 i2c = board.I2C()
 Sensor_Interval = 5		# Number of seconds between polling the sensor array
 data_header = ["Month", "Day", "Year", "Hour", "Minute", "Second"]
 
-### Mox Gas Sensor
+### Mox Gas Sensor (SGP40)
 if Gas_Sensor_On:
     import adafruit_sgp40
     try:
@@ -79,16 +83,15 @@ if Gas_Sensor_On:
         print("SGP40 read failed:", e)
         sgp40_mox_raw = None
 
-### Color Sensor TCS34725
+### Color Sensor (TCS34725)
 if Color_Sensor_On:
 	import adafruit_tcs34725
 	light_sensor = adafruit_tcs34725.TCS34725(i2c, int(tcs34725_RGB_address))
 	#print(light_sensor.color_rgb_bytes)
 	data_header.extend(["Red Light", "Green Light", "Blue Light"])
 	
-### BME280 Temp, Pressure, Humidity
-BME280_Sensor_On = False
-if BME280_Sensor_On:
+### Temp, Pressure, Humidity (BME280)
+if Temp_Press_Humidity_Sensor_On:
 	from adafruit_bme280 import basic as adafruit_bme280
 	import smbus2
 	bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c)
@@ -98,18 +101,15 @@ if BME280_Sensor_On:
 	data_header.extend(["BME Temperature (*F)", "BME Humidity (%)", "BME Pressure (hPa)"])
 	#print("Temp: {}, Pressure: {}, Humidity: {}".format(BME_temp, BME_pressure, BME_humidity))
 
-### BMP388 Temp, Pressure, Altitude
-BMP388_Sensor_On = True
-#uses i2c address 0x77, so cannot be attached to the same pi as BME280
-if BMP388_Sensor_On:
+### Temp, Pressure, Altitude (BMP388)
+if Precision_Press_Temp_Sensor_On:
 	import adafruit_bmp3xx
 	bmp = adafruit_bmp3xx.BMP3XX_I2C(i2c)
 	bmp.sea_level_pressure = 1013.25 #Need to establish sea level pressure in order to extrapolate altitude. Fun project opportunity here.
 	bmp.pressure_oversampling = 8
 	bmp.temperature_oversampling = 2
 
-### CO2 Sensor
-CO2_Sensor_On = True
+### CO2 Sensor (SCD41)
 if CO2_Sensor_On:
 	import adafruit_scd4x as CO2
 	CO2_sensor = CO2.SCD4X(i2c, int(scd41_co2_address))
@@ -117,8 +117,7 @@ if CO2_Sensor_On:
 	print("Waiting for first measurement...")
 	data_header.extend(["CO2 Temperature (*F)", "CO2 Humidity (%)", "CO2 PPM"])
 
-### TSL2591 Light Sensor
-Light_Sensor_On = True
+### Light Sensor (TSL2591)
 if Light_Sensor_On:
 	import adafruit_tsl2591 as Light
 	Light_sensor = Light.TSL2591(i2c, int(tsl2590_light_address))
@@ -128,22 +127,19 @@ if Light_Sensor_On:
 	data_header.extend(["Brightness (lux)", "Visible Light", "Infrared Light"])
 	#print("Brightness: {}, Visible Light: {}, Infrared Light: {}".format(lux, visible, IR))
 
-### LSM303 Accelerometer and Magnetometer 
-Accel_Sensor_On = True
-if Accel_Sensor_On:
+### Accelerometer and Magnetometer (LSM303)
+if Accel_Magnet_Sensor_On:
 	import adafruit_lsm303_accel
 	import adafruit_lis2mdl
 	accel = adafruit_lsm303_accel.LSM303_Accel(i2c)
 	mag = adafruit_lis2mdl.LIS2MDL(i2c)
 
-### LTR390 UV Sensor
-UV_Sensor_On = True
+### UV Sensor (LTR390)
 if UV_Sensor_On:
 	import adafruit_ltr390
 	ltr = adafruit_ltr390.LTR390(i2c)
 
-### VEML7700 Ambient Light Sensor
-Ambient_Sensor_On = True
+### Ambient Light Sensor (VEML7700)
 if Ambient_Sensor_On:
 	import adafruit_veml7700
 	veml7700 = adafruit_veml7700.VEML7700(i2c)
@@ -153,10 +149,13 @@ client = mqtt.Client()
 client.connect(MQTT_BROKER, MQTT_PORT, 60)
 
 
-#### Weather Station
-Weather_Station_On = True
+
+
+# --- Buoy Code --- #
+Buoy_On = True
 
 #Here I initialize the CO2 sensor and take the first reading
+
 while True:
 	if CO2_sensor.data_ready:
 		print("C02: %d ppm" % CO2_sensor.CO2)
@@ -166,10 +165,10 @@ while True:
 		CO2_humidity = round(CO2_sensor.relative_humidity, 1)
 		CO2_CO2 = CO2_sensor.CO2
 		break
-		#Once the CO2 sensor is ready, we get things going.
 
+#Once the CO2 sensor is ready, we get things going.
 
-while Weather_Station_On:
+while Buoy_On:
 
 	run_weather_station = True
 	payload = {

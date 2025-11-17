@@ -39,3 +39,8 @@ As of this step, I am getting no errors when I run my script, but my LCD is not 
 
 When working with UART, the TX of the device must go to the RX of the receiving device. This is different than the usual process of matching connections, but makes sense since the Pi should "receive" what the device "transmits."
 
+11/17/2025
+This project is now branching in two directions: a remote oceanographic buoy that can be deployed anywhere (ideally built from a kit) and the entire Ocean Pi sensor lab/array aboard Wonder.
+I am working on the first prototypes of the oceanographic buoy with my students at Northeast Maritime Institute as a project for their "Intro to Ocean Science" class. We will be documenting progress.
+
+
