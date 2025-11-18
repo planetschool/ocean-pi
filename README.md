@@ -52,4 +52,7 @@ TDS sensor docs: https://wiki.dfrobot.com/Gravity__Analog_TDS_Sensor___Meter_For
 
 This page is also helpful for the pH board I am using: https://forum.arduino.cc/t/help-with-ph-sensor-pin-abbreviations/323936/14
 
-
+I have created a new device on Thingsboard and have generated a Access Token. I am then storing\
+that token as an environment variable using "export THINGSBOARD_TOKEN=thesecrettoken" \
+I can then check that it shows up in the Environment Variables list by running "printenv".\
+Then I use the variable in the code by importing os and using "ACCESS_TOKEN = os.environ.get("THINGSBOARD_TOKEN")"

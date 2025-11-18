@@ -1,6 +1,3 @@
-from gpiozero import CPUTemperature
-import http.server
-import socketserver
 import datetime
 import time
 import os
@@ -10,7 +7,11 @@ import csv
 import paho.mqtt.client as mqtt
 import json
 import busio
-from time import sleep
+
+sleep = time.sleep
+
+#To-Do List:
+# I currently have two competing data formatting schemes (not sure how that happened), which needs to be cleaned up
 
 '''
 All packages for the sensors are installed in a Virtual Environment. You can create a Virtual Environment by running "python -m venv venv-ocean-pi"
@@ -47,13 +48,14 @@ UV_Sensor_On = False					#ltr390 sensor
 Ambient_Sensor_On = False				#veml7700 sensor
 Analog_Digital_Converter_On = True		#ads1115 analog to digital converter
 
-'''
+
 # --- Network Settings --- #
-DEVICE_ID = "atmosphere_node_1"
-MQTT_BROKER = "192.168.1.77"
-MQTT_PORT = 1883
-MQTT_TOPIC = "oceanpi/atmosphere"
-'''
+ACCESS_TOKEN = os.environ.get("THINGSBOARD_TOKEN")
+THINGSBOARD_HOST = "thingsboard.cloud"
+PORT = 1883
+PUBLISH_INTERVAL = 10  # seconds
+MQTT_TOPIC = "v1/devices/me/telemetry"
+
 
 # --- I2C Settings --- #
 i2c_port = 1
@@ -90,6 +92,7 @@ if Gas_Sensor_On:
     try:
         sgp = adafruit_sgp40.SGP40(i2c, int(sgp40_mox_gas_address))
         print("Raw gas: ", sgp.raw)
+        data_header.extend(["Raw Gas"])
     except Exception as e:
         print("SGP40 read failed:", e)
         sgp40_mox_raw = None
@@ -119,6 +122,7 @@ if Precision_Press_Temp_Sensor_On:
 	bmp.sea_level_pressure = 1013.25 #Need to establish sea level pressure in order to extrapolate altitude. Fun project opportunity here.
 	bmp.pressure_oversampling = 8
 	bmp.temperature_oversampling = 2
+	data_header.extend(["BMP Temperature (*F)", "BMP Altitude (m)", "BMP Pressure (hPa)"])
 
 ### CO2 Sensor (SCD41)
 if CO2_Sensor_On:
@@ -144,11 +148,13 @@ if Accel_Magnet_Sensor_On:
 	import adafruit_lis2mdl
 	accel = adafruit_lsm303_accel.LSM303_Accel(i2c)
 	mag = adafruit_lis2mdl.LIS2MDL(i2c)
+	data_header.extend(["Acceleration (m/s^2), Magnetometer (micro-Teslas)"])
 
 ### UV Sensor (LTR390)
 if UV_Sensor_On:
 	import adafruit_ltr390
 	ltr = adafruit_ltr390.LTR390(i2c)
+	data_header.extend(["UV Raw, Ambient Light Raw, UV Index, Ambient Light Index"])
 
 ### Ambient Light Sensor (VEML7700)
 if Ambient_Sensor_On:
@@ -163,19 +169,19 @@ if Analog_Digital_Converter_On:
 	turbidity_sensor = AnalogIn(ads, ads1x15.Pin.A1)
 	pH_sensor = AnalogIn(ads, ads1x15.Pin.A2)
 	water_temperature_sensor = AnalogIn(ads, ads1x15.Pin.A3)
+	data_header.extend(["pH Value, pH Sensor Volts, Water Temp Value, Water Temp Sensor Volts, TDS Value, TDS Sensor Volts, Turbidity Value, Turbidity Sensor Volts"])
 
 
-'''
-# --- Initialize MQTT --- #
+# --- Initialize MQTT Publishing --- #
 client = mqtt.Client()
-client.connect(MQTT_BROKER, MQTT_PORT, 60)
-'''
-
+client.username_pw_set(ACCESS_TOKEN)
+client.connect(THINGSBOARD_HOST, PORT, 60)
+client.loop_start()
 
 
 # --- Buoy Code --- #
 Buoy_On = True
-
+print(data_header)
 #Here I initialize the CO2 sensor and take the first reading
 
 while True:
@@ -375,11 +381,11 @@ while Buoy_On:
 	
 	print("  ")
 	
-	'''
+
 	# --- Publish MQTT ---
 	try:
 		client.publish(MQTT_TOPIC, json.dumps(payload))
-		print(f"[PUBLISH] {payload}")
+		#print(f"[PUBLISH] {payload}")
 	except Exception as e:
 		print(f"[ERROR] MQTT publish failed: {e}")
-	'''
+
