@@ -42,5 +42,12 @@ When working with UART, the TX of the device must go to the RX of the receiving 
 11/17/2025
 This project is now branching in two directions: a remote oceanographic buoy that can be deployed anywhere (ideally built from a kit) and the entire Ocean Pi sensor lab/array aboard Wonder.
 I am working on the first prototypes of the oceanographic buoy with my students at Northeast Maritime Institute as a project for their "Intro to Ocean Science" class. We will be documenting progress.
+Alright, I have the digital sensors all working and printing data to the terminal and on the LCD. I also
+have the Analog to Digital converter working and receiving data from the temp, pH, turbidity, and TDS sensors. What comes next
+is calbrating and interpreting the data from each of these sensors.
+Turbidity sensor docs: https://wiki.dfrobot.com/Turbidity_sensor_SKU__SEN0189
+Water Temperature sensor docs: https://wiki.dfrobot.com/Waterproof_DS18B20_Digital_Temperature_Sensor__SKU_DFR0198_
+pH sensor docs: https://wiki.dfrobot.com/PH_meter_SKU__SEN0161_
+TDS sensor docs: https://wiki.dfrobot.com/Gravity__Analog_TDS_Sensor___Meter_For_Arduino_SKU__SEN0244
 
 
