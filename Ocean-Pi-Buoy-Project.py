@@ -28,6 +28,8 @@ pip3 install adafruit-circuitpython-lis2mdl
 pip3 install adafruit-circuitpython-lsm303-accel
 pip3 install adafruit-circuitpython-veml7700
 
+pip3 install adafruit-circuitpython-ads1x15 
+
 To use the LCD screen, you need to install the LCD driver in the same folder as this code file. In the terminal, run:
 wget https://gist.githubusercontent.com/DenisFromHR/cc863375a6e19dce359d/raw/36b82e787450d127f5019a40e0a55b08bd43435a/RPi_I2C_driver.py
 '''
@@ -43,6 +45,7 @@ Light_Sensor_On = True					#tsl2590 sensor
 Accel_Magnet_Sensor_On = True			#lsm303 sensor
 UV_Sensor_On = False					#ltr390 sensor
 Ambient_Sensor_On = False				#veml7700 sensor
+Analog_Digital_Converter_On = True		#ads1115 analog to digital converter
 
 '''
 # --- Network Settings --- #
@@ -64,6 +67,7 @@ ltr390_lightUV_address = 0x53 #present
 veml7700_light_address = 0x10 #present
 lsm303agr_accel_magnet_address = 0x19 + 0x1e #present and unsure of why two addresses
 bmp388_precision_alt_temp_pres_address = 0x77 #present? or bme280?
+analog_digital_converter_address = 0x48
 
 
 # --- Sensor Configuration --- #
@@ -150,6 +154,16 @@ if UV_Sensor_On:
 if Ambient_Sensor_On:
 	import adafruit_veml7700
 	veml7700 = adafruit_veml7700.VEML7700(i2c)
+	
+### Analog to Digital Converter (ADS1115)
+if Analog_Digital_Converter_On:
+	from adafruit_ads1x15 import ADS1115, AnalogIn, ads1x15
+	ads = ADS1115(i2c)
+	tds_sensor = AnalogIn(ads, ads1x15.Pin.A0)
+	turbidity_sensor = AnalogIn(ads, ads1x15.Pin.A1)
+	pH_sensor = AnalogIn(ads, ads1x15.Pin.A2)
+	water_temperature_sensor = AnalogIn(ads, ads1x15.Pin.A3)
+
 
 '''
 # --- Initialize MQTT --- #
@@ -177,6 +191,7 @@ while True:
 #Once the CO2 sensor is ready, we get things going.
 
 while Buoy_On:
+	print("New Measurement: ")
 
 	run_weather_station = True
 	payload = {
@@ -311,7 +326,26 @@ while Buoy_On:
 			payload["bmp388_temperature_C"] = temp
 		except Exception:
 			pass
+			
+	if Analog_Digital_Converter_On:
+		try:
+			tds_value = tds_sensor.value	
+			
+			temperature_value = water_temperature_sensor.value
+			float(temperature_value)
+			temperature_value = temperature_value/1000
+			temperature_value = (temperature_value * 9/5) + 32
+			
+			pH_value = pH_sensor.value
+			
+			turbidity_value = turbidity_sensor.value
 
+			print("Water Temperature: {} *F, {} volts".format(temperature_value, water_temperature_sensor.voltage))
+			print("pH: {}, {} volts  Total Dissolved Solids: {}, {} volts".format(pH_value, pH_sensor.voltage, tds_value, tds_sensor.voltage))
+			print("Turbidity: {}, {} volts".format(turbidity_value, turbidity_sensor.voltage))
+		except Exception:
+			print("Water sensors failed")
+			pass
 	
 #the LCD/display code will need to be rethought since it presents the data more slowly (scrolling through several screens) than the data is gathered.
 	if LCD_On:
@@ -338,6 +372,8 @@ while Buoy_On:
 			mylcd.lcd_clear()
 			mylcd.lcd_display_string("R:" + str(red) + " G:" + str(green) + " B:" + str(blue), 1)
 			sleep(2)
+	
+	print("  ")
 	
 	'''
 	# --- Publish MQTT ---
