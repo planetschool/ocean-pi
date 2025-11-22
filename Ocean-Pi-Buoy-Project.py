@@ -56,7 +56,6 @@ PORT = 1883
 PUBLISH_INTERVAL = 10  # seconds
 MQTT_TOPIC = "v1/devices/me/telemetry"
 
-
 # --- I2C Settings --- #
 i2c_port = 1
 sgp40_mox_gas_address = 0x59 #present but does not show in i2cdetect for some reason
@@ -379,7 +378,7 @@ while Buoy_On:
 			mylcd.lcd_display_string("R:" + str(red) + " G:" + str(green) + " B:" + str(blue), 1)
 			sleep(2)
 	
-	print("  ")
+	print("  ") #creates a line break in the terminal, which is visually easier to see each new data output
 	
 
 	# --- Publish MQTT ---

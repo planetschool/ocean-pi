@@ -33,6 +33,7 @@ DEVICE_ID = "atmosphere_node_1"
 MQTT_BROKER = "192.168.1.77"
 MQTT_PORT = 1883
 MQTT_TOPIC = "oceanpi/atmosphere"
+Network_Broadcast = False
 
 # --- I2C Settings --- #
 i2c_port = 1
@@ -49,7 +50,7 @@ sgp40_mox_gas_address = 0x59 #present but does not show in i2cdetect for some re
 
 # --- UART Settings --- #
 ser = serial.Serial(
-	port="/dev/serial0",
+	port="/dev/ttyAMA0", #In the Raspberry Pi Zero, we had this as /dev/serial0. ttyAMA0 is for Raspberry Pi 5
 	baudrate = 9600,
 	parity=serial.PARITY_NONE,
 	stopbits=serial.STOPBITS_ONE,
@@ -100,7 +101,7 @@ Sensor_Interval = 5		# Number of seconds between polling the sensor array
 data_header = ["Month", "Day", "Year", "Hour", "Minute", "Second"]
 
 ### Mox Gas Sensor
-Gas_Sensor_On = True
+Gas_Sensor_On = False
 if Gas_Sensor_On:
     import adafruit_sgp40
     try:
@@ -169,20 +170,21 @@ if Accel_Sensor_On:
 	mag = adafruit_lis2mdl.LIS2MDL(i2c)
 
 ### LTR390 UV Sensor
-UV_Sensor_On = True
+UV_Sensor_On = False
 if UV_Sensor_On:
 	import adafruit_ltr390
 	ltr = adafruit_ltr390.LTR390(i2c)
 
 ### VEML7700 Ambient Light Sensor
-Ambient_Sensor_On = True
+Ambient_Sensor_On = False
 if Ambient_Sensor_On:
 	import adafruit_veml7700
 	veml7700 = adafruit_veml7700.VEML7700(i2c)
 
 # --- Initialize MQTT --- #
-client = mqtt.Client()
-client.connect(MQTT_BROKER, MQTT_PORT, 60)
+if Network_Broadcast:
+	client = mqtt.Client()
+	client.connect(MQTT_BROKER, MQTT_PORT, 60)
 
 
 #### Weather Station
@@ -200,6 +202,7 @@ while True:
 		break
 		#Once the CO2 sensor is ready, we get things going.
 
+print("Booting up the weather station")
 
 while Weather_Station_On:
 
@@ -245,6 +248,7 @@ while Weather_Station_On:
 	
 	
 	current_char = ser.read()
+	print("Serial output: ", current_char)
 	# check for equals sign
 	if current_char == b'c':
 		for lists in all_data:
@@ -385,136 +389,139 @@ while Weather_Station_On:
 			print ("Barometric Pressure:" + '%.1f' % my_barometric_total + "hPa")
 			payload["wxstation_pressure_0.1 hpa"] = my_barometric_total
 		
-		if Color_Sensor_On:
-			try:
-				red = light_sensor.color_rgb_bytes[0]
-				green = light_sensor.color_rgb_bytes[1]
-				blue = light_sensor.color_rgb_bytes[2]
-				print("R:" + str(red) + " G:" + str(green) + " B:" + str(blue))
-				#data.append([red, green, blue])
-			except Exception:
-				pass
+	if Color_Sensor_On:
+		try:
+			red = light_sensor.color_rgb_bytes[0]
+			green = light_sensor.color_rgb_bytes[1]
+			blue = light_sensor.color_rgb_bytes[2]
+			print("R:" + str(red) + " G:" + str(green) + " B:" + str(blue))
+			#data.append([red, green, blue])
+		except Exception:
+			pass
 
-		if BME280_Sensor_On:
-			try:
-				BME_humidity = round(bme280.humidity, 1)
-				BME_pressure = round(bme280.pressure, 1)
-				BME_temp = round(bme280.temperature, 1)
-				print("BME_Temp: {}, BME_Pressure: {}, BME_Humidity: {}".format(BME_temp, BME_pressure, BME_humidity))
-				#data.append([BME_temp, BME_humidity, BME_pressure])
-			except Exception:
-				pass
+	if BME280_Sensor_On:
+		try:
+			BME_humidity = round(bme280.humidity, 1)
+			BME_pressure = round(bme280.pressure, 1)
+			BME_temp = round(bme280.temperature, 1)
+			print("BME_Temp: {}, BME_Pressure: {}, BME_Humidity: {}".format(BME_temp, BME_pressure, BME_humidity))
+			#data.append([BME_temp, BME_humidity, BME_pressure])
+		except Exception:
+			pass
+	
+	if CO2_Sensor_On:
+		try:
+			if CO2_sensor.data_ready:
+				CO2_temp_C = round(CO2_sensor.temperature, 1)
+				CO2_humidity = round(CO2_sensor.relative_humidity, 1)
+				CO2_CO2 = CO2_sensor.CO2
+			CO2_temp_F = round(CO2_temp_C * (9/5) + 32, 1) 
+			print("CO2_Temp: {} *F".format(CO2_temp_F))
+			print("CO2: {} ppm".format(CO2_CO2))
+			print("CO2_Humid: {} %".format(CO2_humidity))
+			#data.extend([CO2_temp_F, CO2_humidity, CO2_CO2])
+			payload["scd41_co2_ppm"] = CO2_CO2
+			payload["scd41_humidity_%"] = CO2_humidity
+			payload["scd41_temperature_F"] = CO2_temp_F		
+		except Exception:
+			pass
 		
-		if CO2_Sensor_On:
-			try:
-				if CO2_sensor.data_ready:
-					CO2_temp_C = round(CO2_sensor.temperature, 1)
-					CO2_humidity = round(CO2_sensor.relative_humidity, 1)
-					CO2_CO2 = CO2_sensor.CO2
-				CO2_temp_F = round(CO2_temp_C * (9/5) + 32, 1) 
-				print("CO2_Temp: {} *F".format(CO2_temp_F))
-				print("CO2: {} ppm".format(CO2_CO2))
-				print("CO2_Humid: {} %".format(CO2_humidity))
-				#data.extend([CO2_temp_F, CO2_humidity, CO2_CO2])
-				payload["scd41_co2_ppm"] = CO2_CO2
-				payload["scd41_humidity_%"] = CO2_humidity
-				payload["scd41_temperature_F"] = CO2_temp_F		
-			except Exception:
-				pass
+	if Light_Sensor_On:
+		try:
+			lux = round(Light_sensor.lux, 1)
+			visible = Light_sensor.visible
+			IR = Light_sensor.infrared
+			print("Brightness: {}, Visible Light: {}, Infrared Light: {}".format(lux, visible, IR))
+			#data.extend([lux, visible, IR])
+			payload["tsl2591_lux"] = lux
+			payload["tsl2591_visible"] = visible
+			payload["tsl2591_IR"] = IR
+		except Exception:
+			pass
+
+	if Accel_Sensor_On:
+		try:
+			print("Acceleration (m/s^2): X=%0.3f Y=%0.3f Z=%0.3f"%accel.acceleration)
+			print("Magnetometer (micro-Teslas)): X=%0.3f Y=%0.3f Z=%0.3f"%mag.magnetic)
+			payload["lsm303_acceleration_m/s^2"] = accel.acceleration
+			payload["lsm303_magnetometer_microTeslas"] = mag.magnetic
+		except Exception:
+			pass
+
+	if UV_Sensor_On:
+		try:
+			UV = ltr.uvs
+			ambient = ltr.light
+			UVi = ltr.uvi
+			lux = ltr.lux
+			print("UV:", UV, "Ambient Light:", ambient)
+			print("UVI:", UVi, "Lux:", lux)
+			payload["ltr390_UV_raw"] = UV
+			payload["ltr390_UV_index"] = UVi
+			payload["ltr390_ambient_raw"] = ambient
+			payload["ltr390_ambient_index"] = lux
+		except Exception:
+			pass
 			
+	if Gas_Sensor_On:
+		try:
+			mox = sgp.raw
+			payload["sgp40_mox_raw"] = mox
+		except Exception:
+			pass
+
+	if Ambient_Sensor_On:
+		try:
+			ambient = veml7700.light
+			lux = veml7700.lux
+			print("Ambient light:", ambient)
+			print("Lux:", lux)
+			payload["veml7700_ambient"] = ambient
+			payload["veml7700_lux"] = lux
+		except Exception:
+			pass
+
+	if BMP388_Sensor_On:
+		try:
+			pressure = bmp.pressure
+			temp = bmp.temperature
+			print("Pressure: {:6.4f} hPa  Temperature: {:5.2f} *C".format(pressure, temp,))
+			print('Altitude: {} meters'.format(bmp.altitude))
+			payload["bmp388_pressure_hpa"] = pressure
+			payload["bmp388_temperature_C"] = temp
+		except Exception:
+			pass
+	
+	print(" ")
+	#time.sleep(2)
+	
+#the LCD/display code will need to be rethought since it presents the data more slowly (scrolling through several screens) than the data is gathered.
+	if LCD_On:
+		mylcd.lcd_clear()
 		if Light_Sensor_On:
-			try:
-				lux = round(Light_sensor.lux, 1)
-				visible = Light_sensor.visible
-				IR = Light_sensor.infrared
-				print("Brightness: {}, Visible Light: {}, Infrared Light: {}".format(lux, visible, IR))
-				#data.extend([lux, visible, IR])
-				payload["tsl2591_lux"] = lux
-				payload["tsl2591_visible"] = visible
-				payload["tsl2591_IR"] = IR
-			except Exception:
-				pass
-
-		if Accel_Sensor_On:
-			try:
-				print("Acceleration (m/s^2): X=%0.3f Y=%0.3f Z=%0.3f"%accel.acceleration)
-				print("Magnetometer (micro-Teslas)): X=%0.3f Y=%0.3f Z=%0.3f"%mag.magnetic)
-				payload["lsm303_acceleration_m/s^2"] = accel.acceleration
-				payload["lsm303_magnetometer_microTeslas"] = mag.magnetic
-			except Exception:
-				pass
-
-		if UV_Sensor_On:
-			try:
-				UV = ltr.uvs
-				ambient = ltr.light
-				UVi = ltr.uvi
-				lux = ltr.lux
-				print("UV:", UV, "Ambient Light:", ambient)
-				print("UVI:", UVi, "Lux:", lux)
-				payload["ltr390_UV_raw"] = UV
-				payload["ltr390_UV_index"] = UVi
-				payload["ltr390_ambient_raw"] = ambient
-				payload["ltr390_ambient_index"] = lux
-			except Exception:
-				pass
-				
-		if Gas_Sensor_On:
-			try:
-				mox = sgp.raw
-				payload["sgp40_mox_raw"] = mox
-			except Exception:
-				pass
-
-		if Ambient_Sensor_On:
-			try:
-				ambient = veml7700.light
-				lux = veml7700.lux
-				print("Ambient light:", ambient)
-				print("Lux:", lux)
-				payload["veml7700_ambient"] = ambient
-				payload["veml7700_lux"] = lux
-			except Exception:
-				pass
-
-		if BMP388_Sensor_On:
-			try:
-				pressure = bmp.pressure
-				temp = bmp.temperature
-				print("Pressure: {:6.4f} hPa  Temperature: {:5.2f} *C".format(pressure, temp,))
-				print('Altitude: {} meters'.format(bmp.altitude))
-				payload["bmp388_pressure_hpa"] = pressure
-				payload["bmp388_temperature_C"] = temp
-			except Exception:
-				pass
-
-		
-	#the LCD/display code will need to be rethought since it presents the data more slowly (scrolling through several screens) than the data is gathered.
-		if LCD_On:
 			mylcd.lcd_clear()
-			if Light_Sensor_On:
-				mylcd.lcd_clear()
-				mylcd.lcd_display_string("Bright: {} Lux".format(lux), 1, 0)
-				mylcd.lcd_display_string("IR: {} , Vis: {}".format(IR, visible), 2, 0)
-				sleep(2)
-			if BME280_Sensor_On:
-				mylcd.lcd_clear()
-				mylcd.lcd_display_string("Press: {} hPa".format(BME_pressure), 1, 0)
-				mylcd.lcd_display_string("Humid: {} %".format(BME_humidity), 2, 0)
-				sleep(2)
-			if CO2_Sensor_On:
-				mylcd.lcd_clear()
-				mylcd.lcd_display_string("Temp: {} *F".format(CO2_temp_F), 1, 0)
-				mylcd.lcd_display_string("CO2: {} ppm".format(CO2_CO2), 2, 0) 
-				sleep(2)
-				mylcd.lcd_clear()
-				mylcd.lcd_display_string("Humid: {} %".format(CO2_humidity), 1, 0)
-				sleep(2)
-			if Color_Sensor_On:
-				mylcd.lcd_clear()
-				mylcd.lcd_display_string("R:" + str(red) + " G:" + str(green) + " B:" + str(blue), 1, 0)
-				sleep(2)
-		# --- Publish MQTT ---
+			mylcd.lcd_display_string("Bright: {} Lux".format(lux), 1, 0)
+			mylcd.lcd_display_string("IR: {} , Vis: {}".format(IR, visible), 2, 0)
+			sleep(2)
+		if BME280_Sensor_On:
+			mylcd.lcd_clear()
+			mylcd.lcd_display_string("Press: {} hPa".format(BME_pressure), 1, 0)
+			mylcd.lcd_display_string("Humid: {} %".format(BME_humidity), 2, 0)
+			sleep(2)
+		if CO2_Sensor_On:
+			mylcd.lcd_clear()
+			mylcd.lcd_display_string("Temp: {} *F".format(CO2_temp_F), 1, 0)
+			mylcd.lcd_display_string("CO2: {} ppm".format(CO2_CO2), 2, 0) 
+			sleep(2)
+			mylcd.lcd_clear()
+			mylcd.lcd_display_string("Humid: {} %".format(CO2_humidity), 1, 0)
+			sleep(2)
+		if Color_Sensor_On:
+			mylcd.lcd_clear()
+			mylcd.lcd_display_string("R:" + str(red) + " G:" + str(green) + " B:" + str(blue), 1, 0)
+			sleep(2)
+	# --- Publish MQTT ---
+	if Network_Broadcast:
 		try:
 			client.publish(MQTT_TOPIC, json.dumps(payload))
 			print(f"[PUBLISH] {payload}")
