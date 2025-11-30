@@ -12,6 +12,8 @@ sleep = time.sleep
 
 #To-Do List:
 # I currently have two competing data formatting schemes (not sure how that happened), which needs to be cleaned up
+# Motion sensor is not working
+
 
 '''
 All packages for the sensors are installed in a Virtual Environment. You can create a Virtual Environment by running "python -m venv venv-ocean-pi"
@@ -28,6 +30,7 @@ pip3 install adafruit-circuitpython-ltr390
 pip3 install adafruit-circuitpython-lis2mdl
 pip3 install adafruit-circuitpython-lsm303-accel
 pip3 install adafruit-circuitpython-veml7700
+pip3 install adafruit-circuitpython-bno08x-rvc
 
 pip3 install adafruit-circuitpython-ads1x15 
 
@@ -36,17 +39,18 @@ wget https://gist.githubusercontent.com/DenisFromHR/cc863375a6e19dce359d/raw/36b
 '''
 
 # --- Sensor Selection --- #
-LCD_On = True
+LCD_On = False
 Gas_Sensor_On = False					#spg40 sensor
 Color_Sensor_On = False					#tcs34725 sensor
 Temp_Press_Humidity_Sensor_On = False	#bme280 sensor  
-Precision_Press_Temp_Sensor_On = True	#bmp388 sensor NOTE: uses i2c address 0x77, so cannot be attached to the same pi as BME280
-CO2_Sensor_On = True					#scd41 sensor
+Precision_Press_Temp_Sensor_On = False	#bmp388 sensor NOTE: uses i2c address 0x77, so cannot be attached to the same pi as BME280
+CO2_Sensor_On = False					#scd41 sensor
 Light_Sensor_On = True					#tsl2590 sensor
-Accel_Magnet_Sensor_On = True			#lsm303 sensor
+Accel_Magnet_Sensor_On = False			#lsm303 sensor
 UV_Sensor_On = False					#ltr390 sensor
 Ambient_Sensor_On = False				#veml7700 sensor
-Analog_Digital_Converter_On = True		#ads1115 analog to digital converter
+Analog_Digital_Converter_On = False		#ads1115 analog to digital converter
+Motion_Sensor_On = True					#BNO085 9-DOF sensor
 
 
 # --- Network Settings --- #
@@ -169,6 +173,11 @@ if Analog_Digital_Converter_On:
 	pH_sensor = AnalogIn(ads, ads1x15.Pin.A2)
 	water_temperature_sensor = AnalogIn(ads, ads1x15.Pin.A3)
 	data_header.extend(["pH Value, pH Sensor Volts, Water Temp Value, Water Temp Sensor Volts, TDS Value, TDS Sensor Volts, Turbidity Value, Turbidity Sensor Volts"])
+	
+### Motion Sensor (BNO085):
+if Motion_Sensor_On:
+	from adafruit_bno08x_rvc import BNO08x_RVC
+	motion = BNO08x_RVC(i2c)
 
 
 # --- Initialize MQTT Publishing --- #
@@ -184,13 +193,17 @@ print(data_header)
 #Here I initialize the CO2 sensor and take the first reading
 
 while True:
-	if CO2_sensor.data_ready:
-		print("C02: %d ppm" % CO2_sensor.CO2)
-		print("CO2_Temperature: %0.1f *C" % CO2_sensor.temperature)
-		print("CO2_Humidity: %0.1f %%" % CO2_sensor.relative_humidity)
-		CO2_temp_C = round(CO2_sensor.temperature, 1)
-		CO2_humidity = round(CO2_sensor.relative_humidity, 1)
-		CO2_CO2 = CO2_sensor.CO2
+	if CO2_Sensor_On:
+		if CO2_sensor.data_ready:
+			print("C02: %d ppm" % CO2_sensor.CO2)
+			print("CO2_Temperature: %0.1f *C" % CO2_sensor.temperature)
+			print("CO2_Humidity: %0.1f %%" % CO2_sensor.relative_humidity)
+			CO2_temp_C = round(CO2_sensor.temperature, 1)
+			CO2_humidity = round(CO2_sensor.relative_humidity, 1)
+			CO2_CO2 = CO2_sensor.CO2
+			break
+			
+	else:
 		break
 
 #Once the CO2 sensor is ready, we get things going.
@@ -350,6 +363,14 @@ while Buoy_On:
 			print("Turbidity: {}, {} volts".format(turbidity_value, turbidity_sensor.voltage))
 		except Exception:
 			print("Water sensors failed")
+			pass
+			
+	if Motion_Sensor_On:
+		try:
+			yaw, pitch, roll, x_accel, y_accel, z_accel = motion.heading
+			print("Yaw: {}, Pitch: {}, Roll: {}, X Acceleration: {}, Y Accelleration: {}, Z Accelleration: {}".format(yaw, pitch, roll, x_accel, y_accel, z_accel))
+		except Exception:
+			print("Motion sensor failed")
 			pass
 	
 #the LCD/display code will need to be rethought since it presents the data more slowly (scrolling through several screens) than the data is gathered.
