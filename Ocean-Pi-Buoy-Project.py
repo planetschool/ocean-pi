@@ -12,7 +12,7 @@ sleep = time.sleep
 
 #To-Do List:
 # I currently have two competing data formatting schemes (not sure how that happened), which needs to be cleaned up
-# Motion sensor is not working
+# Need to figure out having two ADC's connected at the same time
 
 
 '''
@@ -76,17 +76,24 @@ i2c_port = 1
 
 ## I2C Addresses
 #Only useful to manually input the address or to confirm a sensor is being detected. Otherwise, addresses are found automatically.
-sgp40_mox_gas_address = 0x59 #present but does not show in i2cdetect for some reason
-tcs34725_RGB_address = 0x29 #present
-bme280_temp_pres_hum_address = 0x77 #present? or bmp388?
-scd41_co2_address = 0x62 #present
-lcd_address = 0x27 #present
-tsl2590_light_address = 0x29 #present
-ltr390_lightUV_address = 0x53 #present
-veml7700_light_address = 0x10 #present
-lsm303agr_accel_magnet_address = 0x19 + 0x1e #present and unsure of why two addresses
-bmp388_precision_alt_temp_pres_address = 0x77 #present? or bme280?
-analog_digital_converter_address = 0x48
+### Buoy Sensors
+adc_dfrobot_address = 0x4b		#I put all my DFRobot sensors on this ADC
+adc_atlas_address = 0x48		#I put all my Atlas sensors on this ADC
+tsl2590_light_address = 0x29 
+bno085_address = 0x4a
+bme688_address = 0x77
+ina238_address = 0x40
+
+### Other Sensor/Peripherals
+sgp40_mox_gas_address = 0x59
+tcs34725_RGB_address = 0x29
+bme280_temp_pres_hum_address = 0x77 
+scd41_co2_address = 0x62 
+lcd_address = 0x27
+ltr390_lightUV_address = 0x53
+veml7700_light_address = 0x10
+lsm303agr_accel_magnet_address = 0x19 + 0x1e #unsure of why two addresses
+bmp388_precision_alt_temp_pres_address = 0x77 #uses the same address as BME280
 
 
 
@@ -96,7 +103,7 @@ i2c = board.I2C()
 Sensor_Interval = 5		# Number of seconds between polling the sensor array
 data_header = ["Month", "Day", "Year", "Hour", "Minute", "Second"]
 
-### Light Sensor (TSL2591)
+### Light Sensor (TSL2591):	https://docs.circuitpython.org/projects/ads1x15
 if Light_Sensor_On:
 	import adafruit_tsl2591 as Light
 	Light_sensor = Light.TSL2591(i2c, int(tsl2590_light_address))
@@ -110,13 +117,25 @@ if Light_Sensor_On:
 ### Analog to Digital Converter (ADS1115)
 if Analog_Digital_Converter_On:
 	from adafruit_ads1x15 import ADS1115, AnalogIn, ads1x15
-	ads = ADS1115(i2c)
-	tds_sensor = AnalogIn(ads, ads1x15.Pin.A0)
-	turbidity_sensor = AnalogIn(ads, ads1x15.Pin.A1)
-	pH_sensor = AnalogIn(ads, ads1x15.Pin.A2)
-	water_temperature_sensor = AnalogIn(ads, ads1x15.Pin.A3)
+	ads_dfrobot = ADS1115(i2c, address=int(adc_dfrobot_address))
+	tds_sensor = AnalogIn(ads_dfrobot, ads1x15.Pin.A0)
+	turbidity_sensor = AnalogIn(ads_dfrobot, ads1x15.Pin.A1)
+	#pH_sensor = AnalogIn(ads_dfrobot, ads1x15.Pin.A2)	#Using an Atlas pH sensor
+	water_temp_sensor = AnalogIn(ads_dfrobot, ads1x15.Pin.A3)
 	print("Testing analog sensors...")
-	data_header.extend(["pH Value, pH Sensor Volts, Water Temp Value, Water Temp Sensor Volts, TDS Value, TDS Sensor Volts, Turbidity Value, Turbidity Sensor Volts"])
+	print("Water Temp Value: {}, Water Temp Sensor Volts: {}, "
+	"TDS Value: {}, TDS Sensor Volts: {}, Turbidity Value: {}, "
+	"Turbidity Sensor Volts: {}".format(water_temp_sensor.value, 
+	water_temp_sensor.voltage, tds_sensor.value, tds_sensor.voltage,
+	turbidity_sensor.value, turbidity_sensor.voltage))
+	data_header.extend(["Water Temp Value, Water Temp Sensor Volts, TDS Value, TDS Sensor Volts, Turbidity Value, Turbidity Sensor Volts"])
+	
+	ads_atlas = ADS1115(i2c, address=int(adc_atlas_address))
+	pH_sensor = AnalogIn(ads_atlas, ads1x15.Pin.A1)
+	ORP_sensor = AnalogIn(ads_atlas, ads1x15.Pin.A0)
+	print("pH Value: {}, pH Volts: {}, "
+	"ORP Value: {}, ORP Volts: {}".format(pH_sensor.value, 
+	pH_sensor.voltage, ORP_sensor.value, ORP_sensor.voltage))
 	
 ### Motion Sensor (BNO085):	https://docs.circuitpython.org/projects/bno08x
 if Motion_Sensor_On:
