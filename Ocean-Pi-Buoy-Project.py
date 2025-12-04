@@ -31,6 +31,8 @@ pip3 install adafruit-circuitpython-lis2mdl
 pip3 install adafruit-circuitpython-lsm303-accel
 pip3 install adafruit-circuitpython-veml7700
 pip3 install adafruit-circuitpython-bno08x-rvc
+pip3 install adafruit-circuitpython-bme680
+pip3 install adafruit-circuitpython-ina23x
 
 pip3 install adafruit-circuitpython-ads1x15 
 
@@ -39,18 +41,25 @@ wget https://gist.githubusercontent.com/DenisFromHR/cc863375a6e19dce359d/raw/36b
 '''
 
 # --- Sensor Selection --- #
-LCD_On = False
-Gas_Sensor_On = False					#spg40 sensor
+
+## Buoy Sensors
+Analog_Digital_Converter_On = True		#ads1115 analog to digital converter. Requires "pip3 install adafruit-circuitpython-ads1x15"
+Motion_Sensor_On = True					#BNO085 9-DOF sensor. Requires "pip3 install adafruit-circuitpython-bno08x-rvc"
+Light_Sensor_On = True					#tsl2590 sensor. Requires "pip3 install adafruit-circuitpython-tsl2591"
+BME680_Sensor_On = True					#Temp, pressure, humidity, gas. Requires "pip3 install adafruit-circuitpython-bme680"
+Power_Sensor_On = True					#INA238 volt, current, power sensor. Requires "pip3 install adafruit-circuitpython-ina23x"
+
+## Other Sensors/Peripherals
+LCD_On = False							#Requires you to download a library from Github. See above.
+Gas_Sensor_On = False					#spg40 sensor. Requires "pip3 install adafruit-circuitpython-sgp40"
 Color_Sensor_On = False					#tcs34725 sensor
-Temp_Press_Humidity_Sensor_On = False	#bme280 sensor  
+Temp_Press_Humidity_Sensor_On = False	#bme280 sensor. Requires "pip3 install adafruit-circuitpython-bmp3xx"
 Precision_Press_Temp_Sensor_On = False	#bmp388 sensor NOTE: uses i2c address 0x77, so cannot be attached to the same pi as BME280
-CO2_Sensor_On = False					#scd41 sensor
-Light_Sensor_On = True					#tsl2590 sensor
-Accel_Magnet_Sensor_On = False			#lsm303 sensor
-UV_Sensor_On = False					#ltr390 sensor
-Ambient_Sensor_On = False				#veml7700 sensor
-Analog_Digital_Converter_On = False		#ads1115 analog to digital converter
-Motion_Sensor_On = True					#BNO085 9-DOF sensor
+CO2_Sensor_On = False					#scd41 sensor. Requires "pip3 install adafruit-circuitpython-scd4x"
+Accel_Magnet_Sensor_On = False			#lsm303 sensor. Requires "pip3 install adafruit-circuitpython-lsm303-accel"
+UV_Sensor_On = False					#ltr390 sensor. Requires "pip3 install adafruit-circuitpython-ltr390"
+Ambient_Sensor_On = False				#veml7700 sensor. Requires "pip3 install adafruit-circuitpython-veml7700"
+
 
 
 # --- Network Settings --- #
@@ -60,8 +69,13 @@ PORT = 1883
 PUBLISH_INTERVAL = 10  # seconds
 MQTT_TOPIC = "v1/devices/me/telemetry"
 
+
+
 # --- I2C Settings --- #
 i2c_port = 1
+
+## I2C Addresses
+#Only useful to manually input the address or to confirm a sensor is being detected. Otherwise, addresses are found automatically.
 sgp40_mox_gas_address = 0x59 #present but does not show in i2cdetect for some reason
 tcs34725_RGB_address = 0x29 #present
 bme280_temp_pres_hum_address = 0x77 #present? or bmp388?
@@ -75,12 +89,51 @@ bmp388_precision_alt_temp_pres_address = 0x77 #present? or bme280?
 analog_digital_converter_address = 0x48
 
 
-# --- Sensor Configuration --- #
+
+# --- Buoy Sensor Configuration --- #
 DEVICE_ID = "Weather Buoy Alpha"
 i2c = board.I2C()
 Sensor_Interval = 5		# Number of seconds between polling the sensor array
 data_header = ["Month", "Day", "Year", "Hour", "Minute", "Second"]
 
+### Light Sensor (TSL2591)
+if Light_Sensor_On:
+	import adafruit_tsl2591 as Light
+	Light_sensor = Light.TSL2591(i2c, int(tsl2590_light_address))
+	lux = Light_sensor.lux
+	visible = Light_sensor.visible		
+	IR = Light_sensor.infrared
+	data_header.extend(["Brightness (lux)", "Visible Light", "Infrared Light"])
+	print("Testing light sensor..."
+	print("Brightness: {}, Visible Light: {}, Infrared Light: {}".format(lux, visible, IR))
+
+### Analog to Digital Converter (ADS1115)
+if Analog_Digital_Converter_On:
+	from adafruit_ads1x15 import ADS1115, AnalogIn, ads1x15
+	ads = ADS1115(i2c)
+	tds_sensor = AnalogIn(ads, ads1x15.Pin.A0)
+	turbidity_sensor = AnalogIn(ads, ads1x15.Pin.A1)
+	pH_sensor = AnalogIn(ads, ads1x15.Pin.A2)
+	water_temperature_sensor = AnalogIn(ads, ads1x15.Pin.A3)
+	print("Testing analog sensors...")
+	data_header.extend(["pH Value, pH Sensor Volts, Water Temp Value, Water Temp Sensor Volts, TDS Value, TDS Sensor Volts, Turbidity Value, Turbidity Sensor Volts"])
+	
+### Motion Sensor (BNO085):
+if Motion_Sensor_On:
+	from adafruit_bno08x_rvc import BNO08x_RVC
+	motion = BNO08x_RVC(i2c)
+	print("Testing motion sensor...")
+	
+### BME680 Temperature, Pressure, Humidity, Gas Sensor:
+if BME680_Sensor_On:
+	from adafruit_bme680 import BME680
+	atmosphere = BME680(i2c)
+	print("Testing atmospheric sensor...")
+	print("Temp: {}*F, Pressure: {}hPa,  Humidity: {}%, Gas: {}mox".format(atmosphere.temp, atmosphere.pressure, atmosphere.humidity, atmosphere.gas))
+	
+
+
+# --- Other Sensor/Peripherals Configuration --- #
 #### LCD Display                                                                                                   
 if LCD_On:
 	import RPi_I2C_driver
@@ -135,16 +188,6 @@ if CO2_Sensor_On:
 	print("Waiting for first measurement...")
 	data_header.extend(["CO2 Temperature (*F)", "CO2 Humidity (%)", "CO2 PPM"])
 
-### Light Sensor (TSL2591)
-if Light_Sensor_On:
-	import adafruit_tsl2591 as Light
-	Light_sensor = Light.TSL2591(i2c, int(tsl2590_light_address))
-	lux = Light_sensor.lux
-	visible = Light_sensor.visible		
-	IR = Light_sensor.infrared
-	data_header.extend(["Brightness (lux)", "Visible Light", "Infrared Light"])
-	#print("Brightness: {}, Visible Light: {}, Infrared Light: {}".format(lux, visible, IR))
-
 ### Accelerometer and Magnetometer (LSM303)
 if Accel_Magnet_Sensor_On:
 	import adafruit_lsm303_accel
@@ -164,20 +207,6 @@ if Ambient_Sensor_On:
 	import adafruit_veml7700
 	veml7700 = adafruit_veml7700.VEML7700(i2c)
 	
-### Analog to Digital Converter (ADS1115)
-if Analog_Digital_Converter_On:
-	from adafruit_ads1x15 import ADS1115, AnalogIn, ads1x15
-	ads = ADS1115(i2c)
-	tds_sensor = AnalogIn(ads, ads1x15.Pin.A0)
-	turbidity_sensor = AnalogIn(ads, ads1x15.Pin.A1)
-	pH_sensor = AnalogIn(ads, ads1x15.Pin.A2)
-	water_temperature_sensor = AnalogIn(ads, ads1x15.Pin.A3)
-	data_header.extend(["pH Value, pH Sensor Volts, Water Temp Value, Water Temp Sensor Volts, TDS Value, TDS Sensor Volts, Turbidity Value, Turbidity Sensor Volts"])
-	
-### Motion Sensor (BNO085):
-if Motion_Sensor_On:
-	from adafruit_bno08x_rvc import BNO08x_RVC
-	motion = BNO08x_RVC(i2c)
 
 
 # --- Initialize MQTT Publishing --- #
