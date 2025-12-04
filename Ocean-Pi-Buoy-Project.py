@@ -10,12 +10,12 @@ import busio
 
 sleep = time.sleep
 
-#To-Do List:
-# I currently have two competing data formatting schemes (not sure how that happened), which needs to be cleaned up
-# Need to figure out having two ADC's connected at the same time
-
-
+# --- Notes --- #
 '''
+To-Do List:
+# I currently have two competing data formatting schemes (not sure how that happened), which needs to be cleaned up
+# Add the UART conductivity sensor
+
 All packages for the sensors are installed in a Virtual Environment. You can create a Virtual Environment by running "python -m venv venv-ocean-pi"
 in the home directory (/planetschool, on our pi)
 
@@ -39,6 +39,8 @@ pip3 install adafruit-circuitpython-ads1x15
 To use the LCD screen, you need to install the LCD driver in the same folder as this code file. In the terminal, run:
 wget https://gist.githubusercontent.com/DenisFromHR/cc863375a6e19dce359d/raw/36b82e787450d127f5019a40e0a55b08bd43435a/RPi_I2C_driver.py
 '''
+
+
 
 # --- Sensor Selection --- #
 
@@ -69,13 +71,17 @@ PORT = 1883
 PUBLISH_INTERVAL = 10  # seconds
 MQTT_TOPIC = "v1/devices/me/telemetry"
 
+### Start the Network
+client = mqtt.Client()
+client.username_pw_set(ACCESS_TOKEN)
+client.connect(THINGSBOARD_HOST, PORT, 60)
+client.loop_start()
 
 
 # --- I2C Settings --- #
 i2c_port = 1
 
-## I2C Addresses
-#Only useful to manually input the address or to confirm a sensor is being detected. Otherwise, addresses are found automatically.
+### I2C Addresses
 ### Buoy Sensors
 adc_dfrobot_address = 0x4b		#I put all my DFRobot sensors on this ADC
 adc_atlas_address = 0x48		#I put all my Atlas sensors on this ADC
@@ -185,7 +191,8 @@ if Power_Sensor_On:
 	print(f"Temperature: {electrical.die_temperature:.2f} °C")
 	
 
-exit()
+
+
 # --- Other Sensor/Peripherals Configuration --- #
 ### LCD Display                                                                                                   
 if LCD_On:
@@ -259,14 +266,8 @@ if UV_Sensor_On:
 if Ambient_Sensor_On:
 	import adafruit_veml7700
 	veml7700 = adafruit_veml7700.VEML7700(i2c)
-	
 
 
-# --- Initialize MQTT Publishing --- #
-client = mqtt.Client()
-client.username_pw_set(ACCESS_TOKEN)
-client.connect(THINGSBOARD_HOST, PORT, 60)
-client.loop_start()
 
 
 # --- Buoy Code --- #
