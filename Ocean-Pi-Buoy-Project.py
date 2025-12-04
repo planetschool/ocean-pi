@@ -30,7 +30,7 @@ pip3 install adafruit-circuitpython-ltr390
 pip3 install adafruit-circuitpython-lis2mdl
 pip3 install adafruit-circuitpython-lsm303-accel
 pip3 install adafruit-circuitpython-veml7700
-pip3 install adafruit-circuitpython-bno08x-rvc
+pip3 install adafruit-circuitpython-bno08x
 pip3 install adafruit-circuitpython-bme680
 pip3 install adafruit-circuitpython-ina23x
 
@@ -104,7 +104,7 @@ if Light_Sensor_On:
 	visible = Light_sensor.visible		
 	IR = Light_sensor.infrared
 	data_header.extend(["Brightness (lux)", "Visible Light", "Infrared Light"])
-	print("Testing light sensor..."
+	print("Testing light sensor...")
 	print("Brightness: {}, Visible Light: {}, Infrared Light: {}".format(lux, visible, IR))
 
 ### Analog to Digital Converter (ADS1115)
@@ -118,23 +118,57 @@ if Analog_Digital_Converter_On:
 	print("Testing analog sensors...")
 	data_header.extend(["pH Value, pH Sensor Volts, Water Temp Value, Water Temp Sensor Volts, TDS Value, TDS Sensor Volts, Turbidity Value, Turbidity Sensor Volts"])
 	
-### Motion Sensor (BNO085):
+### Motion Sensor (BNO085):	https://docs.circuitpython.org/projects/bno08x
 if Motion_Sensor_On:
-	from adafruit_bno08x_rvc import BNO08x_RVC
-	motion = BNO08x_RVC(i2c)
+	from adafruit_bno08x.i2c import BNO08X_I2C
+	from adafruit_bno08x import (
+    BNO_REPORT_ACCELEROMETER,
+    BNO_REPORT_GYROSCOPE,
+    BNO_REPORT_MAGNETOMETER,
+    BNO_REPORT_ROTATION_VECTOR,
+	)	
+	bno = BNO08X_I2C(i2c)
+	bno.enable_feature(BNO_REPORT_ACCELEROMETER)
+	bno.enable_feature(BNO_REPORT_GYROSCOPE)
+	bno.enable_feature(BNO_REPORT_MAGNETOMETER)
+	bno.enable_feature(BNO_REPORT_ROTATION_VECTOR)
+	
 	print("Testing motion sensor...")
+	x_accel, y_accel, z_accel = bno.acceleration
+	#print("Yaw: {}, Pitch: {}, Roll: {}, X Acceleration: {}, Y Accelleration: {}, Z Accelleration: {}".format(yaw, pitch, roll, x_accel, y_accel, z_accel))
+	print("X Acceleration: {}, Y Accelleration: {}, Z Accelleration: {}".format(x_accel, y_accel, z_accel))
+	print("Gyro:")
+	gyro_x, gyro_y, gyro_z = bno.gyro
+	print("X: %0.6f  Y: %0.6f Z: %0.6f rads/s" % (gyro_x, gyro_y, gyro_z))
+	print("Magnetometer:")
+	mag_x, mag_y, mag_z = bno.magnetic
+	print("X: %0.6f  Y: %0.6f Z: %0.6f uT" % (mag_x, mag_y, mag_z))
+	print("Rotation Vector Quaternion:")
+	quat_i, quat_j, quat_k, quat_real = bno.quaternion
+	print("I: %0.6f  J: %0.6f K: %0.6f  Real: %0.6f" % (quat_i, quat_j, quat_k, quat_real))
 	
-### BME680 Temperature, Pressure, Humidity, Gas Sensor:
+### BME680 Temperature, Pressure, Humidity, Gas Sensor:	https://docs.circuitpython.org/projects/bme680
 if BME680_Sensor_On:
-	from adafruit_bme680 import BME680
-	atmosphere = BME680(i2c)
+	from adafruit_bme680 import Adafruit_BME680_I2C
+	atmosphere = Adafruit_BME680_I2C(i2c)
 	print("Testing atmospheric sensor...")
-	print("Temp: {}*F, Pressure: {}hPa,  Humidity: {}%, Gas: {}mox".format(atmosphere.temp, atmosphere.pressure, atmosphere.humidity, atmosphere.gas))
+	print("Temp: {} °C, Pressure: {} hPa,  Humidity: {} %, Gas: {} ohm, Altitude: {} m".format(atmosphere.temperature, atmosphere.pressure, atmosphere.relative_humidity, atmosphere.gas, atmosphere.altitude))
+	
+### Power Sensor (INA238):	https://docs.circuitpython.org/projects/ina23x
+if Power_Sensor_On:
+	from adafruit_ina23x import INA23X
+	electrical = INA23X(i2c)
+	print("Testing power sensor...")
+	print(f"Current: {electrical.current * 1000:.2f} mA")
+	print(f"Bus Voltage: {electrical.bus_voltage:.2f} V")
+	print(f"Shunt Voltage: {electrical.shunt_voltage * 1000:.2f} mV")
+	print(f"Power: {electrical.power * 1000:.2f} mW")
+	print(f"Temperature: {electrical.die_temperature:.2f} °C")
 	
 
-
+exit()
 # --- Other Sensor/Peripherals Configuration --- #
-#### LCD Display                                                                                                   
+### LCD Display                                                                                                   
 if LCD_On:
 	import RPi_I2C_driver
 	
