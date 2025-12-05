@@ -15,7 +15,9 @@ import io
 
 sleep = time.sleep
 
+#----------------------------------------------------------------------
 # --- Notes --- #
+#----------------------------------------------------------------------
 '''
 To-Do List:
 # I currently have two competing data formatting schemes (not sure how that happened), which needs to be cleaned up
@@ -48,7 +50,6 @@ wget https://gist.githubusercontent.com/DenisFromHR/cc863375a6e19dce359d/raw/36b
 # --- Camera Setup --- #
 #----------------------------------------------------------------------
 Camera_On = True
-
 picam2 = Picamera2()
 config = picam2.create_still_configuration(main={"size": (640, 480)})
 picam2.configure(config)
@@ -65,8 +66,9 @@ def create_snapshot():
 	return jpeg_bytes
 
 
+#----------------------------------------------------------------------
 # --- Sensor Selection --- #
-
+#----------------------------------------------------------------------
 ## Buoy Sensors
 Analog_Digital_Converter_On = True		#ads1115 analog to digital converter. Requires "pip3 install adafruit-circuitpython-ads1x15"
 Motion_Sensor_On = True					#BNO085 9-DOF sensor. Requires "pip3 install adafruit-circuitpython-bno08x-rvc"
@@ -86,8 +88,9 @@ UV_Sensor_On = False					#ltr390 sensor. Requires "pip3 install adafruit-circuit
 Ambient_Sensor_On = False				#veml7700 sensor. Requires "pip3 install adafruit-circuitpython-veml7700"
 
 
-
+#----------------------------------------------------------------------
 # --- Network Settings --- #
+#----------------------------------------------------------------------
 ACCESS_TOKEN = os.environ.get("THINGSBOARD_TOKEN")
 THINGSBOARD_HOST = "thingsboard.cloud"
 PORT = 1883
@@ -102,8 +105,9 @@ client.loop_start()
 
 
 
-
+#----------------------------------------------------------------------
 # --- I2C Settings --- #
+#----------------------------------------------------------------------
 i2c_port = 1
 
 ### I2C Addresses
@@ -127,8 +131,9 @@ lsm303agr_accel_magnet_address = 0x19 + 0x1e #unsure of why two addresses
 bmp388_precision_alt_temp_pres_address = 0x77 #uses the same address as BME280
 
 
-
+#----------------------------------------------------------------------
 # --- Buoy Sensor Configuration --- #
+#----------------------------------------------------------------------
 DEVICE_ID = "Weather Buoy Alpha"
 i2c = board.I2C()
 Sensor_Interval = 5		# Number of seconds between polling the sensor array
@@ -217,8 +222,9 @@ if Power_Sensor_On:
 	
 
 
-
+#----------------------------------------------------------------------
 # --- Other Sensor/Peripherals Configuration --- #
+#----------------------------------------------------------------------
 ### LCD Display                                                                                                   
 if LCD_On:
 	import RPi_I2C_driver
@@ -294,8 +300,9 @@ if Ambient_Sensor_On:
 
 
 
-
+#----------------------------------------------------------------------
 # --- Buoy Code --- #
+#----------------------------------------------------------------------
 Buoy_On = True
 print(data_header)
 #Here I initialize the CO2 sensor and take the first reading
