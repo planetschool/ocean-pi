@@ -55,4 +55,8 @@ This page is also helpful for the pH board I am using: https://forum.arduino.cc/
 I have created a new device on Thingsboard and have generated a Access Token. I am then storing\
 that token as an environment variable using "export THINGSBOARD_TOKEN=thesecrettoken" \
 I can then check that it shows up in the Environment Variables list by running "printenv".\
-Then I use the variable in the code by importing os and using "ACCESS_TOKEN = os.environ.get("THINGSBOARD_TOKEN")"
+Then I use the variable in the code by importing os and using "ACCESS_TOKEN = os.environ.get("THINGSBOARD_TOKEN")"\
+
+The above method does not work because the env variable gets deleted when the terminal is closed. We need to edit ~/.bashrc\
+To do that, type "sudo nano ~/.bashrc" into terminal, scroll all the way to the bottom, and add "export THINGSBOARD_TOKEN=thesecrettoken" \
+Then CTRL-X to close, hit ENTER to save the file with the same name, and type Y to save the changes you made

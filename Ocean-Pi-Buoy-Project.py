@@ -7,6 +7,12 @@ import csv
 import paho.mqtt.client as mqtt
 import json
 import busio
+import base64
+from subprocess import check_output
+from picamera2 import Picamera2
+from picamera2.encoders import JpegEncoder
+from PIL import Image
+import io
 
 sleep = time.sleep
 
@@ -39,7 +45,37 @@ pip3 install adafruit-circuitpython-ads1x15
 To use the LCD screen, you need to install the LCD driver in the same folder as this code file. In the terminal, run:
 wget https://gist.githubusercontent.com/DenisFromHR/cc863375a6e19dce359d/raw/36b82e787450d127f5019a40e0a55b08bd43435a/RPi_I2C_driver.py
 '''
+#----------------------------------------------------------------------
+# --- Camera Setup --- #
+#----------------------------------------------------------------------
+Camera_On = True
+'''
+picam2 = Picamera2()
+config = picam2.create_still_configuration(
+	main={"size": (320, 240)} 
+	)
+picam2.configure(config)
+picam2.start()
 
+def create_snapshot():
+    jpeg = picam2.capture_buffer("main")
+    b64 = base64.b64encode(jpeg).decode("utf-8")
+    return b64
+'''
+picam2 = Picamera2()
+config = picam2.create_still_configuration(main={"size": (320, 240)})
+picam2.configure(config)
+picam2.start()
+
+def create_snapshot():
+	# Capture raw RGB frame
+	frame = picam2.capture_array()
+
+	# Encode to JPEG with given quality
+	buf = io.BytesIO()
+	Image.fromarray(frame).save(buf, format="JPEG", quality=50)   # <-- control size here
+	jpeg_bytes = buf.getvalue()
+	return jpeg_bytes
 
 
 # --- Sensor Selection --- #
@@ -76,6 +112,8 @@ client = mqtt.Client()
 client.username_pw_set(ACCESS_TOKEN)
 client.connect(THINGSBOARD_HOST, PORT, 60)
 client.loop_start()
+
+
 
 
 # --- I2C Settings --- #
@@ -295,35 +333,43 @@ while Buoy_On:
 	print("New Measurement: ")
 
 	run_weather_station = True
+	
 	payload = {
 		"device_id": DEVICE_ID,
 		"timestamp": datetime.datetime.utcnow().isoformat() + "Z",
-		
-		"bmp388_pressure_hpa": None,
-		"bmp388_temperature_C": None,
-
-		"sgp40_mox_raw": None,
-		
-		"scd41_co2_ppm": None,
-		"scd41_humidity_%": None,
-		"scd41_temperature_F": None,
 
 		"tsl2591_lux": None,
 		"tsl2591_visible": None,
 		"tsl2591_IR": None,
-
-		"ltr390_UV_raw": None,
-		"ltr390_UV_index": None,
-		"ltr390_ambient_raw": None,
-		"ltr390_ambient_index": None,
-
-		"veml7700_ambient": None,
-		"veml7700_lux": None,
-
-		"lsm303_acceleration_m/s^2": None,
-		"lsm303_magnetometer_microTeslas": None,
+		
+		"water_temp_C": None,
+		"water_temp_F": None,
+		"tds": None,
+		"turbidity": None,
+		
+		"x_accel": None, 
+		"y_accel": None, 
+		"z_accel": None,
+		"gyro_x": None,
+		"gyro_y": None,
+		"gyro_z": None,
+		"mag_x": None,
+		"mag_y": None,
+		"mag_z": None,
+		"quat_i": None,
+		"quat_j": None,
+		"quat_k": None,
+		"quat_real": None,
+		
+		"snapshot": None,
 		
     	}
+	if Camera_On:
+		jpeg_bytes = create_snapshot()
+		pic = base64.b64encode(jpeg_bytes).decode("utf-8")
+		print("length of the pic is:", len(pic))
+		payload["snapshot"] = pic
+		
 		
 	if Color_Sensor_On:
 		try:
@@ -331,7 +377,6 @@ while Buoy_On:
 			green = light_sensor.color_rgb_bytes[1]
 			blue = light_sensor.color_rgb_bytes[2]
 			print("R:" + str(red) + " G:" + str(green) + " B:" + str(blue))
-			#data.append([red, green, blue])
 		except Exception:
 			pass
 
@@ -341,7 +386,6 @@ while Buoy_On:
 			BME_pressure = round(bme280.pressure, 1)
 			BME_temp = round(bme280.temperature, 1)
 			print("BME_Temp: {}, BME_Pressure: {}, BME_Humidity: {}".format(BME_temp, BME_pressure, BME_humidity))
-			#data.append([BME_temp, BME_humidity, BME_pressure])
 		except Exception:
 			pass
 	
@@ -351,14 +395,13 @@ while Buoy_On:
 				CO2_temp_C = round(CO2_sensor.temperature, 1)
 				CO2_humidity = round(CO2_sensor.relative_humidity, 1)
 				CO2_CO2 = CO2_sensor.CO2
-			CO2_temp_F = round(CO2_temp_C * (9/5) + 32, 1) 
-			print("CO2_Temp: {} *F".format(CO2_temp_F))
-			print("CO2: {} ppm".format(CO2_CO2))
-			print("CO2_Humid: {} %".format(CO2_humidity))
-			#data.extend([CO2_temp_F, CO2_humidity, CO2_CO2])
-			payload["scd41_co2_ppm"] = CO2_CO2
-			payload["scd41_humidity_%"] = CO2_humidity
-			payload["scd41_temperature_F"] = CO2_temp_F		
+				CO2_temp_F = round(CO2_temp_C * (9/5) + 32, 1) 
+				print("CO2_Temp: {} *F".format(CO2_temp_F))
+				print("CO2: {} ppm".format(CO2_CO2))
+				print("CO2_Humid: {} %".format(CO2_humidity))
+				payload["scd41_co2_ppm"] = CO2_CO2
+				payload["scd41_humidity_%"] = CO2_humidity
+				payload["scd41_temperature_F"] = CO2_temp_F		
 		except Exception:
 			pass
 		
@@ -432,26 +475,65 @@ while Buoy_On:
 		try:
 			tds_value = tds_sensor.value	
 			
-			temperature_value = water_temperature_sensor.value
+			temperature_value = water_temp_sensor.value
+			water_temp_volts = water_temp_sensor.voltage
 			float(temperature_value)
 			temperature_value = temperature_value/1000
-			temperature_value = (temperature_value * 9/5) + 32
+			water_temp_F = (temperature_value * 9/5) + 32
+			payload["water_temp_C"] = temperature_value
+			payload["water_temp_F"] = water_temp_F
 			
-			pH_value = pH_sensor.value
+			tds = tds_sensor.value
+			tds_volts = tds_sensor.voltage
+			payload["tds"] = tds
 			
-			turbidity_value = turbidity_sensor.value
+			turbidity = turbidity_sensor.value
+			turbidity_volts = turbidity_sensor.voltage
+			payload["turbidity"] = turbidity
 
-			print("Water Temperature: {} *F, {} volts".format(temperature_value, water_temperature_sensor.voltage))
-			print("pH: {}, {} volts  Total Dissolved Solids: {}, {} volts".format(pH_value, pH_sensor.voltage, tds_value, tds_sensor.voltage))
-			print("Turbidity: {}, {} volts".format(turbidity_value, turbidity_sensor.voltage))
+			print("Water Temp: {} °F, Water Temp Volts: {} V, TDS: {}, TDS Volts: {} V, Turbidity: {}, Turbidity Volts: {} V".format(water_temp_F, water_temp_volts, tds, tds_volts,turbidity, turbidity_volts))
+
+			pH = pH_sensor.value
+			pH_volts = pH_sensor.voltage
+			payload["pH"] = pH
+			
+			ORP = ORP_sensor.value
+			ORP_volts = ORP_sensor.voltage
+			payload["ORP"] = ORP
+			
+			print("pH: {}, pH Volts: {} V, ORP: {}, ORP Volts: {} V".format(pH, pH_volts, ORP, ORP_volts))
+
 		except Exception:
 			print("Water sensors failed")
 			pass
 			
 	if Motion_Sensor_On:
 		try:
-			yaw, pitch, roll, x_accel, y_accel, z_accel = motion.heading
-			print("Yaw: {}, Pitch: {}, Roll: {}, X Acceleration: {}, Y Accelleration: {}, Z Accelleration: {}".format(yaw, pitch, roll, x_accel, y_accel, z_accel))
+			x_accel, y_accel, z_accel = bno.acceleration
+			print("X Acceleration: {}, Y Accelleration: {}, Z Accelleration: {}".format(x_accel, y_accel, z_accel))
+			print("Gyro:")
+			gyro_x, gyro_y, gyro_z = bno.gyro
+			print("X: %0.6f  Y: %0.6f Z: %0.6f rads/s" % (gyro_x, gyro_y, gyro_z))
+			print("Magnetometer:")
+			mag_x, mag_y, mag_z = bno.magnetic
+			print("X: %0.6f  Y: %0.6f Z: %0.6f uT" % (mag_x, mag_y, mag_z))
+			print("Rotation Vector Quaternion:")
+			quat_i, quat_j, quat_k, quat_real = bno.quaternion
+			print("I: %0.6f  J: %0.6f K: %0.6f  Real: %0.6f" % (quat_i, quat_j, quat_k, quat_real))
+			print(x_accel, y_accel, z_accel)
+			payload["x_accel"] = x_accel
+			payload["y_accel"] = y_accel
+			payload["z_accel"] = z_accel
+			payload["gyro_x"] = gyro_x
+			payload["gyro_y"] = gyro_y
+			payload["gyro_z"] = gyro_z
+			payload["mag_x"] = mag_x
+			payload["mag_y"] = mag_y
+			payload["mag_z"] = mag_z
+			payload["quat_i"] = quat_i
+			payload["quat_j"] = quat_j
+			payload["quat_k"] = quat_k
+			payload["quat_real"] = quat_real
 		except Exception:
 			print("Motion sensor failed")
 			pass
@@ -484,7 +566,7 @@ while Buoy_On:
 	
 	print("  ") #creates a line break in the terminal, which is visually easier to see each new data output
 	
-
+	print(payload)
 	# --- Publish MQTT ---
 	try:
 		client.publish(MQTT_TOPIC, json.dumps(payload))
