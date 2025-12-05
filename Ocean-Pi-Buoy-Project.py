@@ -8,7 +8,6 @@ import paho.mqtt.client as mqtt
 import json
 import busio
 import base64
-from subprocess import check_output
 from picamera2 import Picamera2
 from picamera2.encoders import JpegEncoder
 from PIL import Image
@@ -49,21 +48,9 @@ wget https://gist.githubusercontent.com/DenisFromHR/cc863375a6e19dce359d/raw/36b
 # --- Camera Setup --- #
 #----------------------------------------------------------------------
 Camera_On = True
-'''
-picam2 = Picamera2()
-config = picam2.create_still_configuration(
-	main={"size": (320, 240)} 
-	)
-picam2.configure(config)
-picam2.start()
 
-def create_snapshot():
-    jpeg = picam2.capture_buffer("main")
-    b64 = base64.b64encode(jpeg).decode("utf-8")
-    return b64
-'''
 picam2 = Picamera2()
-config = picam2.create_still_configuration(main={"size": (320, 240)})
+config = picam2.create_still_configuration(main={"size": (640, 480)})
 picam2.configure(config)
 picam2.start()
 
