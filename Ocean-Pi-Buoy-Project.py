@@ -562,6 +562,19 @@ while Buoy_On:
 		except Exception:
 			print("Motion sensor failed")
 			pass
+			
+	if Conductivity_Sensor_On:
+		try:
+			raw = conductivity_sensor.query("R")
+			print(raw)
+			clean = raw.replace("\x00", "").strip()
+			conductivity = float(clean.partition(":")[2] if ":" in clean else clean)
+			print("Conductivity: ", conductivity)
+			payload["conductivity"] = conductivity
+		
+		except Exception:
+			print("Conductivity sensor failed")
+			pass
 	
 #the LCD/display code will need to be rethought since it presents the data more slowly (scrolling through several screens) than the data is gathered.
 	if LCD_On:
