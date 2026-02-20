@@ -12,6 +12,7 @@ from picamera2 import Picamera2
 from picamera2.encoders import JpegEncoder
 from PIL import Image
 import io
+from oceanpi_atlas import AtlasI2C
 
 sleep = time.sleep
 
@@ -49,7 +50,7 @@ wget https://gist.githubusercontent.com/DenisFromHR/cc863375a6e19dce359d/raw/36b
 #----------------------------------------------------------------------
 # --- Camera Setup --- #
 #----------------------------------------------------------------------
-Camera_On = True
+Camera_On = False
 picam2 = Picamera2()
 config = picam2.create_still_configuration(main={"size": (640, 480)})
 picam2.configure(config)
@@ -75,6 +76,9 @@ Motion_Sensor_On = True					#BNO085 9-DOF sensor. Requires "pip3 install adafrui
 Light_Sensor_On = True					#tsl2590 sensor. Requires "pip3 install adafruit-circuitpython-tsl2591"
 BME680_Sensor_On = True					#Temp, pressure, humidity, gas. Requires "pip3 install adafruit-circuitpython-bme680"
 Power_Sensor_On = True					#INA238 volt, current, power sensor. Requires "pip3 install adafruit-circuitpython-ina23x"
+Conductivity_Sensor_On = True			#Atlas Scientific conductivity probe connected in I2C mode, which is not the default mode the sensor ships in. See page 38: https://files.atlas-scientific.com/EC_EZO_Datasheet.pdf
+
+#All Atlas Scientific sensors using I2C require "pip3 install git+https://github.com/planetschool/oceanpi-atlas.git"
 
 ## Other Sensors/Peripherals
 LCD_On = False							#Requires you to download a library from Github. See above.
@@ -118,6 +122,7 @@ tsl2590_light_address = 0x29
 bno085_address = 0x4a
 bme688_address = 0x77
 ina238_address = 0x40
+atlas_conductivity_address = 0x64
 
 ### Other Sensor/Peripherals
 sgp40_mox_gas_address = 0x59
@@ -172,6 +177,28 @@ if Analog_Digital_Converter_On:
 	print("pH Value: {}, pH Volts: {}, "
 	"ORP Value: {}, ORP Volts: {}".format(pH_sensor.value, 
 	pH_sensor.voltage, ORP_sensor.value, ORP_sensor.voltage))
+	pH = (pH_sensor.voltage * -5.6548) + 15.509
+	
+'''
+pH Conversion
+source: https://files.atlas-scientific.com/Surveyor-pH-datasheet.pdf
+conversion: pH = (-5.6548 * voltage) + 15.509
+0: 2.745
+1: 2.570
+2: 2.390
+3: 2.210
+4: 2.030
+5: 1.855
+6: 1.680
+7: 1.500
+8: 1.330
+9: 1.155
+10: 0.975
+11: 0.800
+12: 0.620
+13: 0.445
+14: 0.265
+'''
 	
 ### Motion Sensor (BNO085):	https://docs.circuitpython.org/projects/bno08x
 if Motion_Sensor_On:
@@ -219,6 +246,9 @@ if Power_Sensor_On:
 	print(f"Shunt Voltage: {electrical.shunt_voltage * 1000:.2f} mV")
 	print(f"Power: {electrical.power * 1000:.2f} mW")
 	print(f"Temperature: {electrical.die_temperature:.2f} °C")
+	
+if Conductivity_Sensor_On:
+	conductivity_sensor = AtlasI2C(address=int(atlas_conductivity_address))
 	
 
 
@@ -487,15 +517,16 @@ while Buoy_On:
 
 			print("Water Temp: {} °F, Water Temp Volts: {} V, TDS: {}, TDS Volts: {} V, Turbidity: {}, Turbidity Volts: {} V".format(water_temp_F, water_temp_volts, tds, tds_volts,turbidity, turbidity_volts))
 
-			pH = pH_sensor.value
+			pH_value = pH_sensor.value
 			pH_volts = pH_sensor.voltage
 			payload["pH"] = pH
 			
 			ORP = ORP_sensor.value
 			ORP_volts = ORP_sensor.voltage
 			payload["ORP"] = ORP
+			payload["pH"] = pH
 			
-			print("pH: {}, pH Volts: {} V, ORP: {}, ORP Volts: {} V".format(pH, pH_volts, ORP, ORP_volts))
+			print("pH: {}, pH Value: {}, pH Volts: {} V, ORP: {}, ORP Volts: {} V".format(pH, pH_value, pH_volts, ORP, ORP_volts))
 
 		except Exception:
 			print("Water sensors failed")
