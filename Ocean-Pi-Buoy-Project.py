@@ -50,11 +50,12 @@ wget https://gist.githubusercontent.com/DenisFromHR/cc863375a6e19dce359d/raw/36b
 #----------------------------------------------------------------------
 # --- Camera Setup --- #
 #----------------------------------------------------------------------
-Camera_On = False
+Camera_On = True
 picam2 = Picamera2()
 config = picam2.create_still_configuration(main={"size": (640, 480)})
 picam2.configure(config)
 picam2.start()
+CAMERA_INTERVAL = 10  # seconds
 
 def create_snapshot():
 	# Capture raw RGB frame
@@ -70,6 +71,8 @@ def create_snapshot():
 #----------------------------------------------------------------------
 # --- Sensor Selection --- #
 #----------------------------------------------------------------------
+SENSOR_INTERVAL = 2  # seconds
+
 ## Buoy Sensors
 Analog_Digital_Converter_On = True		#ads1115 analog to digital converter. Requires "pip3 install adafruit-circuitpython-ads1x15"
 Motion_Sensor_On = True					#BNO085 9-DOF sensor. Requires "pip3 install adafruit-circuitpython-bno08x-rvc"
@@ -353,6 +356,8 @@ while True:
 
 #Once the CO2 sensor is ready, we get things going.
 
+counter = 0
+
 while Buoy_On:
 	print("New Measurement: ")
 
@@ -388,11 +393,12 @@ while Buoy_On:
 		"snapshot": None,
 		
     	}
-	if Camera_On:
+	if Camera_On and counter == CAMERA_INTERVAL:
 		jpeg_bytes = create_snapshot()
 		pic = base64.b64encode(jpeg_bytes).decode("utf-8")
 		print("length of the pic is:", len(pic))
 		payload["snapshot"] = pic
+		counter = 0
 		
 		
 	if Color_Sensor_On:
@@ -611,4 +617,7 @@ while Buoy_On:
 		#print(f"[PUBLISH] {payload}")
 	except Exception as e:
 		print(f"[ERROR] MQTT publish failed: {e}")
+	
+	counter += 1
+	sleep(SENSOR_INTERVAL)
 
