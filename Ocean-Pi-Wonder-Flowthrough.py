@@ -55,7 +55,7 @@ picam2 = Picamera2()
 config = picam2.create_still_configuration(main={"size": (640, 480)})
 picam2.configure(config)
 picam2.start()
-CAMERA_INTERVAL = 10  # seconds
+CAMERA_INTERVAL = 2  # seconds
 
 def create_snapshot():
 	# Capture raw RGB frame
