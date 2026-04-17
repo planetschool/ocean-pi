@@ -22,7 +22,7 @@ sleep = time.sleep
 '''
 To-Do List:
 # I currently have two competing data formatting schemes (not sure how that happened), which needs to be cleaned up
-# Add the UART conductivity sensor
+# Grab data continuously (particularly from gyroscope) but only send it to Thingsboard every 20 seconds
 
 All packages for the sensors are installed in a Virtual Environment. You can create a Virtual Environment by running "python -m venv venv-ocean-pi"
 in the home directory (/planetschool, on our pi)
@@ -73,18 +73,22 @@ def create_snapshot():
 #----------------------------------------------------------------------
 SENSOR_INTERVAL = 2  # seconds
 
-## Buoy Sensors
+## Wonder Sensors
 Analog_Digital_Converter_On = True		#ads1115 analog to digital converter. Requires "pip3 install adafruit-circuitpython-ads1x15"
 Motion_Sensor_On = True					#BNO085 9-DOF sensor. Requires "pip3 install adafruit-circuitpython-bno08x-rvc"
 Light_Sensor_On = True					#tsl2590 sensor. Requires "pip3 install adafruit-circuitpython-tsl2591"
 BME680_Sensor_On = True					#Temp, pressure, humidity, gas. Requires "pip3 install adafruit-circuitpython-bme680"
-Power_Sensor_On = True					#INA238 volt, current, power sensor. Requires "pip3 install adafruit-circuitpython-ina23x"
-Conductivity_Sensor_On = True			#Atlas Scientific conductivity probe connected in I2C mode, which is not the default mode the sensor ships in. See page 38: https://files.atlas-scientific.com/EC_EZO_Datasheet.pdf
+Power_Sensor_On = False				#INA238 volt, current, power sensor. Requires "pip3 install adafruit-circuitpython-ina23x"
+Atlas_Conductivity_Sensor_On = True			#Atlas Scientific conductivity probe connected in I2C mode, which is not the default mode the sensor ships in. See page 38: https://files.atlas-scientific.com/EC_EZO_Datasheet.pdf
+Atlas_pH_Sensor_On = True
+Atlas_Water_Temp_Sensor_On = True
+Atlas_DO_Sensor_On = True
+Atlas_ORP_Sensor_On = True
 
 #All Atlas Scientific sensors using I2C require "pip3 install git+https://github.com/planetschool/oceanpi-atlas.git"
 
 ## Other Sensors/Peripherals
-LCD_On = False							#Requires you to download a library from Github. See above.
+LCD_On = True							#Requires you to download a library from Github. See above.
 Gas_Sensor_On = False					#spg40 sensor. Requires "pip3 install adafruit-circuitpython-sgp40"
 Color_Sensor_On = False					#tcs34725 sensor
 Temp_Press_Humidity_Sensor_On = False	#bme280 sensor. Requires "pip3 install adafruit-circuitpython-bmp3xx"
@@ -101,7 +105,7 @@ Ambient_Sensor_On = False				#veml7700 sensor. Requires "pip3 install adafruit-c
 ACCESS_TOKEN = os.environ.get("THINGSBOARD_TOKEN")
 THINGSBOARD_HOST = "thingsboard.cloud"
 PORT = 1883
-PUBLISH_INTERVAL = 10  # seconds
+PUBLISH_INTERVAL = 20  # seconds
 MQTT_TOPIC = "v1/devices/me/telemetry"
 
 ### Start the Network
@@ -119,8 +123,7 @@ i2c_port = 1
 
 ### I2C Addresses
 ### Buoy Sensors
-adc_dfrobot_address = 0x4b		#I put all my DFRobot sensors on this ADC
-adc_atlas_address = 0x48		#I put all my analog Atlas sensors on this ADC
+adc_address = 0x48		#I put all my analog sensors on this ADC
 tsl2590_light_address = 0x29 
 bno085_address = 0x4a
 bme688_address = 0x77
@@ -146,7 +149,7 @@ bmp388_precision_alt_temp_pres_address = 0x77 #uses the same address as BME280
 #----------------------------------------------------------------------
 # --- Buoy Sensor Configuration --- #
 #----------------------------------------------------------------------
-DEVICE_ID = "Weather Buoy Alpha"
+DEVICE_ID = "Wonder Flow-through"
 i2c = board.I2C()
 Sensor_Interval = 5		# Number of seconds between polling the sensor array
 data_header = ["Month", "Day", "Year", "Hour", "Minute", "Second"]
@@ -165,26 +168,12 @@ if Light_Sensor_On:
 ### Analog to Digital Converter (ADS1115)
 if Analog_Digital_Converter_On:
 	from adafruit_ads1x15 import ADS1115, AnalogIn, ads1x15
-	ads_dfrobot = ADS1115(i2c, address=int(adc_dfrobot_address))
-	tds_sensor = AnalogIn(ads_dfrobot, ads1x15.Pin.A0)
+	ads_dfrobot = ADS1115(i2c, address=int(adc_address))
 	turbidity_sensor = AnalogIn(ads_dfrobot, ads1x15.Pin.A1)
-	#pH_sensor = AnalogIn(ads_dfrobot, ads1x15.Pin.A2)	#Using an Atlas pH sensor
-	water_temp_sensor = AnalogIn(ads_dfrobot, ads1x15.Pin.A3)
+	data_header.extend(["Turbidity Value, Turbidity Sensor Volts"])
 	print("Testing analog sensors...")
-	print("Water Temp Value: {}, Water Temp Sensor Volts: {}, "
-	"TDS Value: {}, TDS Sensor Volts: {}, Turbidity Value: {}, "
-	"Turbidity Sensor Volts: {}".format(water_temp_sensor.value, 
-	water_temp_sensor.voltage, tds_sensor.value, tds_sensor.voltage,
-	turbidity_sensor.value, turbidity_sensor.voltage))
-	data_header.extend(["Water Temp Value, Water Temp Sensor Volts, TDS Value, TDS Sensor Volts, Turbidity Value, Turbidity Sensor Volts"])
-	
-	ads_atlas = ADS1115(i2c, address=int(adc_atlas_address))
-	pH_sensor = AnalogIn(ads_atlas, ads1x15.Pin.A1)
-	ORP_sensor = AnalogIn(ads_atlas, ads1x15.Pin.A0)
-	print("pH Value: {}, pH Volts: {}, "
-	"ORP Value: {}, ORP Volts: {}".format(pH_sensor.value, 
-	pH_sensor.voltage, ORP_sensor.value, ORP_sensor.voltage))
-	pH = (pH_sensor.voltage * -5.6548) + 15.509
+	print("Turbidity Value: {}, Turbidity Sensor Volts: {}".format(turbidity_sensor.value, turbidity_sensor.voltage))
+
 	
 '''
 pH Conversion
@@ -209,32 +198,43 @@ conversion: pH = (-5.6548 * voltage) + 15.509
 	
 ### Motion Sensor (BNO085):	https://docs.circuitpython.org/projects/bno08x
 if Motion_Sensor_On:
-	from adafruit_bno08x.i2c import BNO08X_I2C
-	from adafruit_bno08x import (
-    BNO_REPORT_ACCELEROMETER,
-    BNO_REPORT_GYROSCOPE,
-    BNO_REPORT_MAGNETOMETER,
-    BNO_REPORT_ROTATION_VECTOR,
-	)	
-	bno = BNO08X_I2C(i2c)
-	bno.enable_feature(BNO_REPORT_ACCELEROMETER)
-	bno.enable_feature(BNO_REPORT_GYROSCOPE)
-	bno.enable_feature(BNO_REPORT_MAGNETOMETER)
-	bno.enable_feature(BNO_REPORT_ROTATION_VECTOR)
-	
-	print("Testing motion sensor...")
-	x_accel, y_accel, z_accel = bno.acceleration
-	#print("Yaw: {}, Pitch: {}, Roll: {}, X Acceleration: {}, Y Accelleration: {}, Z Accelleration: {}".format(yaw, pitch, roll, x_accel, y_accel, z_accel))
-	print("X Acceleration: {}, Y Accelleration: {}, Z Accelleration: {}".format(x_accel, y_accel, z_accel))
-	print("Gyro:")
-	gyro_x, gyro_y, gyro_z = bno.gyro
-	print("X: %0.6f  Y: %0.6f Z: %0.6f rads/s" % (gyro_x, gyro_y, gyro_z))
-	print("Magnetometer:")
-	mag_x, mag_y, mag_z = bno.magnetic
-	print("X: %0.6f  Y: %0.6f Z: %0.6f uT" % (mag_x, mag_y, mag_z))
-	print("Rotation Vector Quaternion:")
-	quat_i, quat_j, quat_k, quat_real = bno.quaternion
-	print("I: %0.6f  J: %0.6f K: %0.6f  Real: %0.6f" % (quat_i, quat_j, quat_k, quat_real))
+	try:
+		from adafruit_bno08x.i2c import BNO08X_I2C
+		from adafruit_bno08x import (
+		BNO_REPORT_ACCELEROMETER,
+		BNO_REPORT_GYROSCOPE,
+		BNO_REPORT_MAGNETOMETER,
+		BNO_REPORT_ROTATION_VECTOR,
+		)	
+		
+		REPORT_INTERVAL = 100000
+		bno = BNO08X_I2C(i2c, address=int(bno085_address))
+		bno.enable_feature(BNO_REPORT_ACCELEROMETER, REPORT_INTERVAL)
+		bno.enable_feature(BNO_REPORT_GYROSCOPE, REPORT_INTERVAL)
+		bno.enable_feature(BNO_REPORT_MAGNETOMETER,REPORT_INTERVAL)
+		bno.enable_feature(BNO_REPORT_ROTATION_VECTOR,REPORT_INTERVAL)
+		
+		print("Acceleration:")
+		accel_x, accel_y, accel_z = bno.acceleration
+		print("X: %0.6f  Y: %0.6f Z: %0.6f  m/s^2" % (accel_x, accel_y, accel_z))
+		'''
+		print("Testing motion sensor...")
+		x_accel, y_accel, z_accel = bno.acceleration
+		#print("Yaw: {}, Pitch: {}, Roll: {}, X Acceleration: {}, Y Accelleration: {}, Z Accelleration: {}".format(yaw, pitch, roll, x_accel, y_accel, z_accel))
+		print("X Acceleration: {}, Y Accelleration: {}, Z Accelleration: {}".format(x_accel, y_accel, z_accel))
+		print("Gyro:")
+		gyro_x, gyro_y, gyro_z = bno.gyro
+		print("X: %0.6f  Y: %0.6f Z: %0.6f rads/s" % (gyro_x, gyro_y, gyro_z))
+		print("Magnetometer:")
+		mag_x, mag_y, mag_z = bno.magnetic
+		print("X: %0.6f  Y: %0.6f Z: %0.6f uT" % (mag_x, mag_y, mag_z))
+		print("Rotation Vector Quaternion:")
+		quat_i, quat_j, quat_k, quat_real = bno.quaternion
+		print("I: %0.6f  J: %0.6f K: %0.6f  Real: %0.6f" % (quat_i, quat_j, quat_k, quat_real))
+		'''
+	except:
+		print("Motion sensor failed to connect")
+		pass
 	
 ### BME680 Temperature, Pressure, Humidity, Gas Sensor:	https://docs.circuitpython.org/projects/bme680
 if BME680_Sensor_On:
@@ -254,9 +254,20 @@ if Power_Sensor_On:
 	print(f"Power: {electrical.power * 1000:.2f} mW")
 	print(f"Temperature: {electrical.die_temperature:.2f} °C")
 	
-if Conductivity_Sensor_On:
-	conductivity_sensor = AtlasI2C(address=int(atlas_conductivity_address))
+if Atlas_Conductivity_Sensor_On:
+	atlas_conductivity_sensor = AtlasI2C(address=int(atlas_conductivity_address))
 	
+if Atlas_pH_Sensor_On:
+	atlas_ph_sensor = AtlasI2C(address=int(atlas_ph_address))
+	
+if Atlas_ORP_Sensor_On:
+	atlas_orp_sensor = AtlasI2C(address=int(atlas_orp_address))
+	
+if Atlas_DO_Sensor_On:
+	atlas_do_sensor = AtlasI2C(address=int(atlas_do_address))
+	
+if Atlas_Water_Temp_Sensor_On:
+	atlas_water_temp_sensor = AtlasI2C(address=int(atlas_temp_address))
 
 
 #----------------------------------------------------------------------
@@ -265,10 +276,11 @@ if Conductivity_Sensor_On:
 ### LCD Display                                                                                                   
 if LCD_On:
 	import RPi_I2C_driver
-	
 	mylcd = RPi_I2C_driver.lcd()
 	mylcd.lcd_display_string("Starting up the", 1)
-	mylcd.lcd_display_string("Weather Station", 2)
+	mylcd.lcd_display_string("Science Station", 2)
+	print("Starting the LCD--you should see text")
+	sleep(2)
 
 ### Mox Gas Sensor (SGP40)
 if Gas_Sensor_On:
@@ -338,9 +350,9 @@ if Ambient_Sensor_On:
 
 
 #----------------------------------------------------------------------
-# --- Buoy Code --- #
+# --- Flow-through Code --- #
 #----------------------------------------------------------------------
-Buoy_On = True
+System_On = True
 print(data_header)
 #Here I initialize the CO2 sensor and take the first reading
 
@@ -362,11 +374,16 @@ while True:
 
 counter = 0
 
-while Buoy_On:
+while System_On:
 	print("New Measurement: ")
 
 	run_weather_station = True
 	
+	payload = {
+		"device_id": DEVICE_ID,
+		"timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+		}
+	'''
 	payload = {
 		"device_id": DEVICE_ID,
 		"timestamp": datetime.datetime.utcnow().isoformat() + "Z",
@@ -397,6 +414,8 @@ while Buoy_On:
 		"snapshot": None,
 		
     	}
+    	'''
+    	
 	if Camera_On and counter == CAMERA_INTERVAL:
 		jpeg_bytes = create_snapshot()
 		pic = base64.b64encode(jpeg_bytes).decode("utf-8")
@@ -433,9 +452,9 @@ while Buoy_On:
 				print("CO2_Temp: {} *F".format(CO2_temp_F))
 				print("CO2: {} ppm".format(CO2_CO2))
 				print("CO2_Humid: {} %".format(CO2_humidity))
-				payload["scd41_co2_ppm"] = CO2_CO2
-				payload["scd41_humidity_%"] = CO2_humidity
-				payload["scd41_temperature_F"] = CO2_temp_F		
+				payload["CO2_ppm"] = CO2_CO2
+				payload["CO2_humidity_%"] = CO2_humidity
+				payload["CO2_temp_F"] = CO2_temp_F		
 		except Exception:
 			pass
 		
@@ -446,9 +465,9 @@ while Buoy_On:
 			IR = Light_sensor.infrared
 			print("Brightness: {}, Visible Light: {}, Infrared Light: {}".format(lux, visible, IR))
 			#data.extend([lux, visible, IR])
-			payload["tsl2591_lux"] = lux
-			payload["tsl2591_visible"] = visible
-			payload["tsl2591_IR"] = IR
+			payload["lux"] = lux
+			payload["visible"] = visible
+			payload["IR"] = IR
 		except Exception:
 			pass
 
@@ -469,10 +488,10 @@ while Buoy_On:
 			lux = ltr.lux
 			print("UV:", UV, "Ambient Light:", ambient)
 			print("UVI:", UVi, "Lux:", lux)
-			payload["ltr390_UV_raw"] = UV
-			payload["ltr390_UV_index"] = UVi
-			payload["ltr390_ambient_raw"] = ambient
-			payload["ltr390_ambient_index"] = lux
+			payload["UV_raw"] = UV
+			payload["UV_index"] = UVi
+			payload["ambient_raw"] = ambient
+			payload["ambient_index"] = lux
 		except Exception:
 			pass
 			
@@ -539,7 +558,7 @@ while Buoy_On:
 			print("pH: {}, pH Value: {}, pH Volts: {} V, ORP: {}, ORP Volts: {} V".format(pH, pH_value, pH_volts, ORP, ORP_volts))
 
 		except Exception:
-			print("Water sensors failed")
+			print("ADC sensors failed")
 			pass
 			
 	if Motion_Sensor_On:
@@ -572,49 +591,95 @@ while Buoy_On:
 		except Exception:
 			print("Motion sensor failed")
 			pass
-			
-	if Conductivity_Sensor_On:
+	
+	if BME680_Sensor_On:
 		try:
-			raw = conductivity_sensor.query("R")
-			print(raw)
+			payload["air_temp"] = atmosphere.temperature
+			payload["air_press"] = atmosphere.pressure
+			payload["air_humid"] = atmosphere.relative_humidity
+			payload["air_gas"] = atmosphere.gas
+			payload["air_alt"] = atmosphere.altitude
+			print("Atmosphere sensors working!")
+			
+		except Exception:
+			print("Atmosphere sensors failed")
+			pass
+			
+	if Atlas_Conductivity_Sensor_On:
+		try:
+			raw = atlas_conductivity_sensor.query("R")
 			clean = raw.replace("\x00", "").strip()
-			conductivity = float(clean.partition(":")[2] if ":" in clean else clean)
-			print("Conductivity: ", conductivity)
-			payload["conductivity"] = conductivity
+			atlas_conductivity = float(clean.partition(":")[2] if ":" in clean else clean)
+			print("Conductivity: ", atlas_conductivity)
+			payload["conductivity"] = atlas_conductivity
 		
 		except Exception:
 			print("Conductivity sensor failed")
 			pass
 	
+	if Atlas_pH_Sensor_On:
+		try:
+			raw = atlas_ph_sensor.query("R")
+			clean = raw.replace("\x00", "").strip()
+			atlas_ph = float(clean.partition(":")[2] if ":" in clean else clean)
+			print("pH: ", atlas_ph)
+			payload["pH"] = atlas_ph
+		
+		except Exception:
+			print("pH sensor failed")
+			pass
+			
+	if Atlas_DO_Sensor_On:
+		try:
+			raw = atlas_do_sensor.query("R")
+			clean = raw.replace("\x00", "").strip()
+			atlas_do = float(clean.partition(":")[2] if ":" in clean else clean)
+			print("Dissolved Oxygen: ", atlas_do)
+			payload["dissolved_o2"] = atlas_do
+		
+		except Exception:
+			print("Dissolved Oxygen sensor failed")
+			pass
+			
+	if Atlas_Water_Temp_Sensor_On:
+		try:
+			raw = atlas_water_temp_sensor.query("R")
+			clean = raw.replace("\x00", "").strip()
+			atlas_water_temp = float(clean.partition(":")[2] if ":" in clean else clean)
+			print("Water Temperature: ", atlas_water_temp)
+			payload["water_temp"] = atlas_water_temp
+		
+		except Exception:
+			print("Water Temperature sensor failed")
+			pass
+			
+	if Atlas_ORP_Sensor_On:
+		try:
+			raw = atlas_orp_sensor.query("R")
+			clean = raw.replace("\x00", "").strip()
+			atlas_orp = float(clean.partition(":")[2] if ":" in clean else clean)
+			print("Oxygen-Reduction Potential: ", atlas_orp)
+			payload["orp"] = atlas_orp
+		
+		except Exception:
+			print("ORP sensor failed")
+			pass
+			
+					
 #the LCD/display code will need to be rethought since it presents the data more slowly (scrolling through several screens) than the data is gathered.
+
 	if LCD_On:
-		mylcd.lcd_clear()
-		if Light_Sensor_On:
+		items = list(payload.items())
+
+		for i in range(2, len(items), 4):
 			mylcd.lcd_clear()
-			mylcd.lcd_display_string("Bright: {} Lux".format(lux), 1)
-			mylcd.lcd_display_string("IR: {} , Vis: {}".format(IR, visible), 2)
-			sleep(2)
-		if Temp_Press_Humidity_Sensor_On:
-			mylcd.lcd_clear()
-			mylcd.lcd_display_string("Press: {} hPa".format(BME_pressure), 1)
-			mylcd.lcd_display_string("Humid: {} %".format(BME_humidity), 2)
-			sleep(2)
-		if CO2_Sensor_On:
-			mylcd.lcd_clear()
-			mylcd.lcd_display_string("Temp: {} *F".format(CO2_temp_F), 1)
-			mylcd.lcd_display_string("CO2: {} ppm".format(CO2_CO2), 2) 
-			sleep(2)
-			mylcd.lcd_clear()
-			mylcd.lcd_display_string("Humid: {} %".format(CO2_humidity), 1)
-			sleep(2)
-		if Color_Sensor_On:
-			mylcd.lcd_clear()
-			mylcd.lcd_display_string("R:" + str(red) + " G:" + str(green) + " B:" + str(blue), 1)
-			sleep(2)
-	
-	print("  ") #creates a line break in the terminal, which is visually easier to see each new data output
-	
-	print(payload)
+
+			for row, (key, value) in enumerate(items[i:i+4], start=1):
+				mylcd.lcd_display_string(f"{key}: {value}"[:20], row)
+
+			time.sleep(2)
+
+
 	# --- Publish MQTT ---
 	try:
 		client.publish(MQTT_TOPIC, json.dumps(payload))
