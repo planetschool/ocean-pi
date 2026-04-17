@@ -126,6 +126,7 @@ bno085_address = 0x4a
 bme688_address = 0x77
 ina238_address = 0x40
 atlas_conductivity_address = 0x64
+atlas_ph_address = 0x63
 
 ### Other Sensor/Peripherals
 sgp40_mox_gas_address = 0x59
