@@ -120,13 +120,16 @@ i2c_port = 1
 ### I2C Addresses
 ### Buoy Sensors
 adc_dfrobot_address = 0x4b		#I put all my DFRobot sensors on this ADC
-adc_atlas_address = 0x48		#I put all my Atlas sensors on this ADC
+adc_atlas_address = 0x48		#I put all my analog Atlas sensors on this ADC
 tsl2590_light_address = 0x29 
 bno085_address = 0x4a
 bme688_address = 0x77
 ina238_address = 0x40
 atlas_conductivity_address = 0x64
 atlas_ph_address = 0x63
+atlas_orp_address = 0x62
+atlas_do_address = 0x61
+atlas_temp_address = 0x66
 
 ### Other Sensor/Peripherals
 sgp40_mox_gas_address = 0x59
