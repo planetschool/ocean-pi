@@ -50,12 +50,13 @@ wget https://gist.githubusercontent.com/DenisFromHR/cc863375a6e19dce359d/raw/36b
 #----------------------------------------------------------------------
 # --- Camera Setup --- #
 #----------------------------------------------------------------------
-Camera_On = True
-picam2 = Picamera2()
-config = picam2.create_still_configuration(main={"size": (640, 480)})
-picam2.configure(config)
-picam2.start()
-CAMERA_INTERVAL = 2  # seconds
+Camera_On = False
+if Camera_On:
+	picam2 = Picamera2()
+	config = picam2.create_still_configuration(main={"size": (640, 480)})
+	picam2.configure(config)
+	picam2.start()
+	CAMERA_INTERVAL = 2  # seconds
 
 def create_snapshot():
 	# Capture raw RGB frame
@@ -74,7 +75,7 @@ def create_snapshot():
 SENSOR_INTERVAL = 2  # seconds
 
 ## Wonder Sensors
-Analog_Digital_Converter_On = True		#ads1115 analog to digital converter. Requires "pip3 install adafruit-circuitpython-ads1x15"
+Analog_Digital_Converter_On = False		#ads1115 analog to digital converter. Requires "pip3 install adafruit-circuitpython-ads1x15"
 Motion_Sensor_On = True					#BNO085 9-DOF sensor. Requires "pip3 install adafruit-circuitpython-bno08x-rvc"
 Light_Sensor_On = True					#tsl2590 sensor. Requires "pip3 install adafruit-circuitpython-tsl2591"
 BME680_Sensor_On = True					#Temp, pressure, humidity, gas. Requires "pip3 install adafruit-circuitpython-bme680"

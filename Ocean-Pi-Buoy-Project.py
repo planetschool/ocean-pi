@@ -50,12 +50,14 @@ wget https://gist.githubusercontent.com/DenisFromHR/cc863375a6e19dce359d/raw/36b
 #----------------------------------------------------------------------
 # --- Camera Setup --- #
 #----------------------------------------------------------------------
-Camera_On = True
-picam2 = Picamera2()
-config = picam2.create_still_configuration(main={"size": (640, 480)})
-picam2.configure(config)
-picam2.start()
-CAMERA_INTERVAL = 10  # seconds
+Camera_On = False
+
+if Camera_On:
+	picam2 = Picamera2()
+	config = picam2.create_still_configuration(main={"size": (640, 480)})
+	picam2.configure(config)
+	picam2.start()
+	CAMERA_INTERVAL = 10  # seconds
 
 def create_snapshot():
 	# Capture raw RGB frame
@@ -74,12 +76,12 @@ def create_snapshot():
 SENSOR_INTERVAL = 2  # seconds
 
 ## Buoy Sensors
-Analog_Digital_Converter_On = True		#ads1115 analog to digital converter. Requires "pip3 install adafruit-circuitpython-ads1x15"
+Analog_Digital_Converter_On = False		#ads1115 analog to digital converter. Requires "pip3 install adafruit-circuitpython-ads1x15"
 Motion_Sensor_On = True					#BNO085 9-DOF sensor. Requires "pip3 install adafruit-circuitpython-bno08x-rvc"
-Light_Sensor_On = True					#tsl2590 sensor. Requires "pip3 install adafruit-circuitpython-tsl2591"
-BME680_Sensor_On = True					#Temp, pressure, humidity, gas. Requires "pip3 install adafruit-circuitpython-bme680"
-Power_Sensor_On = True					#INA238 volt, current, power sensor. Requires "pip3 install adafruit-circuitpython-ina23x"
-Conductivity_Sensor_On = True			#Atlas Scientific conductivity probe connected in I2C mode, which is not the default mode the sensor ships in. See page 38: https://files.atlas-scientific.com/EC_EZO_Datasheet.pdf
+Light_Sensor_On = False					#tsl2590 sensor. Requires "pip3 install adafruit-circuitpython-tsl2591"
+BME680_Sensor_On = False					#Temp, pressure, humidity, gas. Requires "pip3 install adafruit-circuitpython-bme680"
+Power_Sensor_On = False				#INA238 volt, current, power sensor. Requires "pip3 install adafruit-circuitpython-ina23x"
+Conductivity_Sensor_On = False			#Atlas Scientific conductivity probe connected in I2C mode, which is not the default mode the sensor ships in. See page 38: https://files.atlas-scientific.com/EC_EZO_Datasheet.pdf
 
 #All Atlas Scientific sensors using I2C require "pip3 install git+https://github.com/planetschool/oceanpi-atlas.git"
 
