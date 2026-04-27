@@ -1,4 +1,8 @@
-# ocean-pi
+# Ocean Pi: Run Your Code At Sea
+
+This README is a smattering of unorganized notes and will be updated one day. Until that day, we are actively updating this project's documentation at [learn.oceanpi.org](https://learn.oceanpi.org).
+
+
 Code, guides, and samples to help you run your code at sea aboard the Planet School's sailing research vessel, Wonder.
 
 (4/28/2025) Alright, going to take notes here as I revisit this code for the first time in several months. I am working on building the full science station on Wonder and my current thinking is that I will have a centralized Raspberry Pi 5 running OceanPlotter that will act as the "Ocean Hub" and gather data from several other Raspberry Pi computers (mostly Pi Zero 2 W's) scattered around the ship connected to sensor arrays. These "node" Raspberry Pi computers include:
