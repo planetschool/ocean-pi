@@ -1,7 +1,9 @@
-# Ocean Pi: Run Your Code At Sea
+# Ocean Pi
+**Run Your Code At Sea**
 
 This README is a smattering of unorganized notes and will be updated one day. Until that day, we are actively updating this project's documentation at [learn.oceanpi.org](https://learn.oceanpi.org).
 
+--
 
 Code, guides, and samples to help you run your code at sea aboard the Planet School's sailing research vessel, Wonder.
 
