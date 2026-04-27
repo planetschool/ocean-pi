@@ -76,15 +76,15 @@ SENSOR_INTERVAL = 2  # seconds
 
 ## Wonder Sensors
 Analog_Digital_Converter_On = False		#ads1115 analog to digital converter. Requires "pip3 install adafruit-circuitpython-ads1x15"
-Motion_Sensor_On = True					#BNO085 9-DOF sensor. Requires "pip3 install adafruit-circuitpython-bno08x-rvc"
-Light_Sensor_On = True					#tsl2590 sensor. Requires "pip3 install adafruit-circuitpython-tsl2591"
-BME680_Sensor_On = True					#Temp, pressure, humidity, gas. Requires "pip3 install adafruit-circuitpython-bme680"
+Motion_Sensor_On = True					#BNO085 9-DOF sensor. Requires "pip3 install adafruit-circuitpython-bno08x"
+Light_Sensor_On = False					#tsl2590 sensor. Requires "pip3 install adafruit-circuitpython-tsl2591"
+BME680_Sensor_On = False					#Temp, pressure, humidity, gas. Requires "pip3 install adafruit-circuitpython-bme680"
 Power_Sensor_On = False				#INA238 volt, current, power sensor. Requires "pip3 install adafruit-circuitpython-ina23x"
-Atlas_Conductivity_Sensor_On = True			#Atlas Scientific conductivity probe connected in I2C mode, which is not the default mode the sensor ships in. See page 38: https://files.atlas-scientific.com/EC_EZO_Datasheet.pdf
-Atlas_pH_Sensor_On = True
-Atlas_Water_Temp_Sensor_On = True
-Atlas_DO_Sensor_On = True
-Atlas_ORP_Sensor_On = True
+Atlas_Conductivity_Sensor_On = False			#Atlas Scientific conductivity probe connected in I2C mode, which is not the default mode the sensor ships in. See page 38: https://files.atlas-scientific.com/EC_EZO_Datasheet.pdf
+Atlas_pH_Sensor_On = False
+Atlas_Water_Temp_Sensor_On = False
+Atlas_DO_Sensor_On = False
+Atlas_ORP_Sensor_On = False
 
 #All Atlas Scientific sensors using I2C require "pip3 install git+https://github.com/planetschool/oceanpi-atlas.git"
 
@@ -563,19 +563,21 @@ while System_On:
 			pass
 			
 	if Motion_Sensor_On:
+		print_motion = False
 		try:
 			x_accel, y_accel, z_accel = bno.acceleration
-			print("X Acceleration: {}, Y Accelleration: {}, Z Accelleration: {}".format(x_accel, y_accel, z_accel))
-			print("Gyro:")
 			gyro_x, gyro_y, gyro_z = bno.gyro
-			print("X: %0.6f  Y: %0.6f Z: %0.6f rads/s" % (gyro_x, gyro_y, gyro_z))
-			print("Magnetometer:")
 			mag_x, mag_y, mag_z = bno.magnetic
-			print("X: %0.6f  Y: %0.6f Z: %0.6f uT" % (mag_x, mag_y, mag_z))
-			print("Rotation Vector Quaternion:")
 			quat_i, quat_j, quat_k, quat_real = bno.quaternion
-			print("I: %0.6f  J: %0.6f K: %0.6f  Real: %0.6f" % (quat_i, quat_j, quat_k, quat_real))
-			print(x_accel, y_accel, z_accel)
+			if print_motion:
+				print("X Acceleration: {}, Y Accelleration: {}, Z Accelleration: {}".format(x_accel, y_accel, z_accel))
+				print("Gyro:")
+				print("X: %0.6f  Y: %0.6f Z: %0.6f rads/s" % (gyro_x, gyro_y, gyro_z))
+				print("Magnetometer:")
+				print("X: %0.6f  Y: %0.6f Z: %0.6f uT" % (mag_x, mag_y, mag_z))
+				print("Rotation Vector Quaternion:")
+				print("I: %0.6f  J: %0.6f K: %0.6f  Real: %0.6f" % (quat_i, quat_j, quat_k, quat_real))
+				print(x_accel, y_accel, z_accel)
 			payload["x_accel"] = x_accel
 			payload["y_accel"] = y_accel
 			payload["z_accel"] = z_accel
@@ -684,7 +686,7 @@ while System_On:
 	# --- Publish MQTT ---
 	try:
 		client.publish(MQTT_TOPIC, json.dumps(payload))
-		#print(f"[PUBLISH] {payload}")
+		print(f"[PUBLISH] {payload}")
 	except Exception as e:
 		print(f"[ERROR] MQTT publish failed: {e}")
 	

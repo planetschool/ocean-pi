@@ -7,7 +7,6 @@ from picamera2.encoders import JpegEncoder
 from PIL import Image
 import io
 import base64
-import time
 import os
 
 ACCESS_TOKEN = os.environ.get("THINGSBOARD_TOKEN")
@@ -17,6 +16,8 @@ SENSEHAT_INTERVAL = 2  # seconds
 CAMERA_INTERVAL = 10  # seconds
 
 sense = SenseHat()
+sense.color.gain = 16
+sense.color.integration_cycles = 64
 
 client = mqtt.Client()
 client.username_pw_set(ACCESS_TOKEN)
@@ -54,7 +55,7 @@ while True:
         "orientation": sense.get_orientation(),
         "acceleration": sense.get_accelerometer_raw(),
         "gyroscope": sense.get_gyroscope_raw(),
-        "color": (color.red, color.green, color.blue),
+        "color": sense.color.color,
     }
 
     if Camera_On and counter == CAMERA_INTERVAL:

@@ -106,12 +106,44 @@ PORT = 1883
 PUBLISH_INTERVAL = 10  # seconds
 MQTT_TOPIC = "v1/devices/me/telemetry"
 
-### Start the Network
-client = mqtt.Client()
-client.username_pw_set(ACCESS_TOKEN)
-client.connect(THINGSBOARD_HOST, PORT, 60)
-client.loop_start()
+print(f"[INFO] ACCESS_TOKEN present: {ACCESS_TOKEN is not None}", flush=True)
+mqtt_connected = False
 
+def on_connect(client, userdata, flags, rc, properties=None):
+    global mqtt_connected
+    print(f"[INFO] MQTT on_connect rc={rc}", flush=True)
+    mqtt_connected = (rc == 0)
+
+def on_disconnect(client, userdata, rc, properties=None):
+    global mqtt_connected
+    mqtt_connected = False
+    print(f"[WARN] MQTT disconnected rc={rc}", flush=True)
+
+def start_mqtt():
+    global client
+
+    if not ACCESS_TOKEN:
+        raise RuntimeError("THINGSBOARD_TOKEN is not set")
+
+    client = mqtt.Client()
+    client.username_pw_set(ACCESS_TOKEN)
+    client.on_connect = on_connect
+    client.on_disconnect = on_disconnect
+
+    print(f"[INFO] Connecting to {THINGSBOARD_HOST}:{PORT} ...", flush=True)
+    client.connect(THINGSBOARD_HOST, PORT, 60)
+    client.loop_start()
+
+    for _ in range(30):
+        if mqtt_connected:
+            print("[INFO] MQTT connected successfully", flush=True)
+            return client
+        print("[INFO] Waiting for MQTT connection...", flush=True)
+        time.sleep(1)
+
+    raise RuntimeError("MQTT did not connect within 30 seconds")
+
+client = start_mqtt()
 
 
 #----------------------------------------------------------------------
@@ -148,7 +180,7 @@ bmp388_precision_alt_temp_pres_address = 0x77 #uses the same address as BME280
 #----------------------------------------------------------------------
 # --- Buoy Sensor Configuration --- #
 #----------------------------------------------------------------------
-DEVICE_ID = "Weather Buoy Alpha"
+DEVICE_ID = "Ocean Buoy Alpha"
 i2c = board.I2C()
 Sensor_Interval = 5		# Number of seconds between polling the sensor array
 data_header = ["Month", "Day", "Year", "Hour", "Minute", "Second"]
@@ -618,12 +650,33 @@ while Buoy_On:
 	
 	print(payload)
 	# --- Publish MQTT ---
+	if mqtt_connected:
+		print("Payload about to send:", payload, flush=True)
+		result = client.publish(MQTT_TOPIC, json.dumps(payload))
+		result.wait_for_publish()
+		print(f"[INFO] Publish rc={result.rc}", flush=True)
+	else:
+		print("[ERROR] MQTT not connected, skipping publish", flush=True)
+		
+	if not mqtt_connected:
+		print("[WARN] MQTT not connected, attempting reconnect...", flush=True)
+		try:
+			client.reconnect()
+			time.sleep(2)
+		except Exception as e:
+			print(f"[ERROR] Reconnect failed: {e}", flush=True)
+			time.sleep(5)
+			continue
+	'''
 	try:
-		client.publish(MQTT_TOPIC, json.dumps(payload))
-		#print(f"[PUBLISH] {payload}")
+		print("Payload about to send:", payload, flush=True)
+		result = client.publish(MQTT_TOPIC, json.dumps(payload))
+		result.wait_for_publish()
+		print("Publish rc:", result.rc, flush=True)
+		print("Publish attempted", flush=True)
 	except Exception as e:
 		print(f"[ERROR] MQTT publish failed: {e}")
-	
+	'''
 	counter += 1
 	sleep(SENSOR_INTERVAL)
 
