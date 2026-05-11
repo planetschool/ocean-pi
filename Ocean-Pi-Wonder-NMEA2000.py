@@ -11,22 +11,6 @@ from pathlib import Path
 import paho.mqtt.client as mqtt
 
 
-# ============================================================
-# Ocean Pi - Wonder NMEA 2000 Collector
-#
-# Data path:
-# candump can0
-#   -> candump2analyzer
-#   -> analyzer -json
-#   -> Python
-#   -> local logs + MQTT
-# ============================================================
-
-
-# -----------------------------
-# Configuration
-# -----------------------------
-
 CAN_INTERFACE = "can0"
 
 CANBOAT_DIR = "/home/planetschool/canboat"
@@ -41,31 +25,23 @@ LATEST_JSON_FILE = LOG_DIR / "wonder_nmea2000_latest.json"
 SUMMARY_JSON_FILE = LOG_DIR / "wonder_nmea2000_summary.json"
 
 MQTT_ENABLED = True
-MQTT_HOST = "323f203e3f1d4829b83bb41f5c6d6f58.s1.eu.hivemq.cloud"
-MQTT_PORT = 8883
+MQTT_HOST = os.environ.get("MQTT_HOST", "323f203e3f1d4829b83bb41f5c6d6f58.s1.eu.hivemq.cloud")
+MQTT_PORT = int(os.environ.get("MQTT_PORT", "8883"))
+MQTT_USERNAME = os.environ.get("MQTT_USERNAME", "planetschool")
+MQTT_PASSWORD = os.environ.get("MQTT_PASSWORD", "Planetschool1")
+
 MQTT_TOPIC_ALL = "oceanpi/wonder/nmea2000/all"
 MQTT_TOPIC_SUMMARY = "oceanpi/wonder/nmea2000/summary"
-MQTT_USERNAME = "planetschool"
-MQTT_PASSWORD = "Planetschool1"
 
-SUMMARY_PUBLISH_INTERVAL = 2.0  # seconds
-
+SUMMARY_PUBLISH_INTERVAL = 2.0
 PRINT_ALL_MESSAGES = False
 PRINT_SUMMARY = True
-
-
-# -----------------------------
-# Global state
-# -----------------------------
 
 latest_values = {}
 last_summary_publish = 0
 running = True
+mqtt_client = None
 
-
-# -----------------------------
-# Utility functions
-# -----------------------------
 
 def utc_now():
     return datetime.now(timezone.utc).isoformat()
@@ -98,12 +74,6 @@ signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
 
-# -----------------------------
-# MQTT setup
-# -----------------------------
-
-mqtt_client = None
-
 def setup_mqtt():
     global mqtt_client
 
@@ -127,20 +97,14 @@ def publish(topic, payload):
         return
 
     try:
-        mqtt_client.publish(topic, json.dumps(payload))
+        result = mqtt_client.publish(topic, json.dumps(payload), qos=0, retain=True)
+        if result.rc != mqtt.MQTT_ERR_SUCCESS:
+            print(f"[WARNING] MQTT publish returned rc={result.rc}")
     except Exception as e:
         print(f"[WARNING] MQTT publish failed: {e}")
 
 
-# -----------------------------
-# NMEA 2000 message mapping
-# -----------------------------
-
 def get_field(fields, *possible_names):
-    """
-    CANboat field names vary by PGN and device.
-    This helper searches for several possible field names.
-    """
     if not isinstance(fields, dict):
         return None
 
@@ -152,46 +116,30 @@ def get_field(fields, *possible_names):
 
 
 def update_latest_values(message):
-    """
-    Promote useful NMEA 2000 PGNs into clean dashboard fields.
-    Full raw messages are still logged separately.
-    """
-
     pgn = message.get("pgn")
     description = message.get("description", "")
     fields = message.get("fields", {})
 
     latest_values["last_nmea2000_update_utc"] = utc_now()
 
-    # --------------------------------------------------------
-    # PGN 129025 - Position, Rapid Update
-    # --------------------------------------------------------
     if pgn == 129025:
         lat = get_field(fields, "Latitude")
         lon = get_field(fields, "Longitude")
 
         if lat is not None:
             latest_values["gps_latitude"] = safe_float(lat)
-
         if lon is not None:
             latest_values["gps_longitude"] = safe_float(lon)
 
-    # --------------------------------------------------------
-    # PGN 129026 - COG & SOG, Rapid Update
-    # --------------------------------------------------------
     elif pgn == 129026:
         cog = get_field(fields, "COG", "Course Over Ground")
         sog = get_field(fields, "SOG", "Speed Over Ground")
 
         if cog is not None:
             latest_values["course_over_ground"] = safe_float(cog)
-
         if sog is not None:
             latest_values["speed_over_ground"] = safe_float(sog)
 
-    # --------------------------------------------------------
-    # PGN 127250 - Vessel Heading
-    # --------------------------------------------------------
     elif pgn == 127250:
         heading = get_field(fields, "Heading")
         deviation = get_field(fields, "Deviation")
@@ -200,45 +148,34 @@ def update_latest_values(message):
 
         if heading is not None:
             latest_values["heading"] = safe_float(heading)
-
         if deviation is not None:
             latest_values["heading_deviation"] = safe_float(deviation)
-
         if variation is not None:
             latest_values["heading_variation"] = safe_float(variation)
-
         if reference is not None:
             latest_values["heading_reference"] = reference
 
     elif pgn == 127257:
         pitch = get_field(fields, "Pitch")
         roll = get_field(fields, "Roll")
-    
+        yaw = get_field(fields, "Yaw")
+
         if pitch is not None:
             latest_values["pitch"] = safe_float(pitch)
-    
         if roll is not None:
             latest_values["roll"] = safe_float(roll)
-    
-        # PGN 127257 from your device does not include Yaw,
-        # so the dashboard should use vessel heading as yaw.
+        if yaw is not None:
+            latest_values["yaw"] = safe_float(yaw)
 
-    # --------------------------------------------------------
-    # PGN 128267 - Water Depth
-    # --------------------------------------------------------
     elif pgn == 128267:
         depth = get_field(fields, "Depth", "Water Depth")
         offset = get_field(fields, "Offset")
 
         if depth is not None:
             latest_values["water_depth"] = safe_float(depth)
-
         if offset is not None:
             latest_values["water_depth_offset"] = safe_float(offset)
 
-    # --------------------------------------------------------
-    # PGN 130306 - Wind Data
-    # --------------------------------------------------------
     elif pgn == 130306:
         wind_speed = get_field(fields, "Wind Speed")
         wind_angle = get_field(fields, "Wind Angle")
@@ -246,16 +183,11 @@ def update_latest_values(message):
 
         if wind_speed is not None:
             latest_values["wind_speed"] = safe_float(wind_speed)
-
         if wind_angle is not None:
             latest_values["wind_angle"] = safe_float(wind_angle)
-
         if reference is not None:
             latest_values["wind_reference"] = reference
 
-    # --------------------------------------------------------
-    # PGN 127488 - Engine Parameters, Rapid Update
-    # --------------------------------------------------------
     elif pgn == 127488:
         engine_speed = get_field(fields, "Speed", "Engine Speed")
         engine_boost = get_field(fields, "Boost Pressure")
@@ -263,16 +195,11 @@ def update_latest_values(message):
 
         if engine_speed is not None:
             latest_values["engine_rpm"] = safe_float(engine_speed)
-
         if engine_boost is not None:
             latest_values["engine_boost_pressure"] = safe_float(engine_boost)
-
         if engine_tilt is not None:
             latest_values["engine_tilt_trim"] = safe_float(engine_tilt)
 
-    # --------------------------------------------------------
-    # PGN 127489 - Engine Parameters, Dynamic
-    # --------------------------------------------------------
     elif pgn == 127489:
         oil_pressure = get_field(fields, "Oil Pressure")
         oil_temp = get_field(fields, "Oil Temperature")
@@ -282,22 +209,15 @@ def update_latest_values(message):
 
         if oil_pressure is not None:
             latest_values["engine_oil_pressure"] = safe_float(oil_pressure)
-
         if oil_temp is not None:
             latest_values["engine_oil_temperature"] = safe_float(oil_temp)
-
         if coolant_temp is not None:
             latest_values["engine_coolant_temperature"] = safe_float(coolant_temp)
-
         if alternator_voltage is not None:
             latest_values["engine_alternator_voltage"] = safe_float(alternator_voltage)
-
         if fuel_rate is not None:
             latest_values["engine_fuel_rate"] = safe_float(fuel_rate)
 
-    # --------------------------------------------------------
-    # PGN 127508 - Battery Status
-    # --------------------------------------------------------
     elif pgn == 127508:
         instance = get_field(fields, "Instance", "Battery Instance")
         voltage = get_field(fields, "Battery Voltage", "Voltage")
@@ -311,17 +231,47 @@ def update_latest_values(message):
 
         if voltage is not None:
             latest_values[f"{prefix}_voltage"] = safe_float(voltage)
-
         if current is not None:
             latest_values[f"{prefix}_current"] = safe_float(current)
-
         if temperature is not None:
             latest_values[f"{prefix}_temperature"] = safe_float(temperature)
 
-    # --------------------------------------------------------
-    # PGN 130310 / 130311 / 130312 / 130316 - Environmental
-    # --------------------------------------------------------
-    elif pgn in [130310, 130311, 130312, 130316]:
+        # Also expose battery instance 0 as generic dashboard-friendly names.
+        if instance in [0, "0", None]:
+            if voltage is not None:
+                latest_values["battery_voltage"] = safe_float(voltage)
+            if current is not None:
+                latest_values["battery_current"] = safe_float(current)
+            if temperature is not None:
+                latest_values["battery_temperature"] = safe_float(temperature)
+
+    elif pgn == 130312:
+        source = get_field(fields, "Source", "Temperature Source")
+        temperature = get_field(fields, "Actual Temperature", "Temperature")
+
+        if temperature is not None:
+            source_text = str(source).lower() if source is not None else ""
+
+            if "outside" in source_text or "air" in source_text:
+                latest_values["outside_air_temperature"] = safe_float(temperature)
+            elif "water" in source_text or "sea" in source_text:
+                latest_values["water_temperature"] = safe_float(temperature)
+            else:
+                latest_values["temperature"] = safe_float(temperature)
+
+    elif pgn == 130313:
+        humidity = get_field(fields, "Actual Humidity", "Humidity")
+
+        if humidity is not None:
+            latest_values["relative_humidity"] = safe_float(humidity)
+
+    elif pgn == 130314:
+        pressure = get_field(fields, "Actual Pressure", "Pressure", "Atmospheric Pressure")
+
+        if pressure is not None:
+            latest_values["atmospheric_pressure"] = safe_float(pressure)
+
+    elif pgn in [130310, 130311, 130316]:
         water_temp = get_field(fields, "Water Temperature", "Sea Temperature")
         outside_temp = get_field(fields, "Outside Ambient Air Temperature", "Outside Temperature")
         air_temp = get_field(fields, "Air Temperature")
@@ -330,22 +280,15 @@ def update_latest_values(message):
 
         if water_temp is not None:
             latest_values["water_temperature"] = safe_float(water_temp)
-
         if outside_temp is not None:
             latest_values["outside_air_temperature"] = safe_float(outside_temp)
-
         if air_temp is not None:
             latest_values["air_temperature"] = safe_float(air_temp)
-
         if pressure is not None:
             latest_values["atmospheric_pressure"] = safe_float(pressure)
-
         if humidity is not None:
             latest_values["relative_humidity"] = safe_float(humidity)
 
-    # --------------------------------------------------------
-    # Keep a lightweight count of PGNs seen
-    # --------------------------------------------------------
     pgn_key = f"pgn_{pgn}_count"
     latest_values[pgn_key] = latest_values.get(pgn_key, 0) + 1
 
@@ -353,18 +296,7 @@ def update_latest_values(message):
         latest_values[f"pgn_{pgn}_description"] = description
 
 
-# -----------------------------
-# Process handling
-# -----------------------------
-
 def start_pipeline():
-    """
-    Starts:
-        candump can0
-        candump2analyzer
-        analyzer -json
-    """
-
     print("Starting CANboat pipeline...")
     print(f"CAN interface: {CAN_INTERFACE}")
 
@@ -409,10 +341,6 @@ def stop_pipeline(processes):
             process.kill()
 
 
-# -----------------------------
-# Main loop
-# -----------------------------
-
 def run():
     global last_summary_publish
 
@@ -440,7 +368,6 @@ def run():
                     print(f"[WARNING] Bad JSON: {line}")
                     continue
 
-                # CANboat emits a version line at startup
                 if "version" in message:
                     print(f"CANboat analyzer version: {message.get('version')}")
                     continue
