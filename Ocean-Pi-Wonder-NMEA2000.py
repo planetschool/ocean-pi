@@ -210,6 +210,19 @@ def update_latest_values(message):
         if reference is not None:
             latest_values["heading_reference"] = reference
 
+    elif pgn == 127257:
+        pitch = get_field(fields, "Pitch")
+        roll = get_field(fields, "Roll")
+    
+        if pitch is not None:
+            latest_values["pitch"] = safe_float(pitch)
+    
+        if roll is not None:
+            latest_values["roll"] = safe_float(roll)
+    
+        # PGN 127257 from your device does not include Yaw,
+        # so the dashboard should use vessel heading as yaw.
+
     # --------------------------------------------------------
     # PGN 128267 - Water Depth
     # --------------------------------------------------------
