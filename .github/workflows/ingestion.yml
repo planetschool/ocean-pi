@@ -1,0 +1,61 @@
+name: Ocean Pi ingestion
+on:
+  pull_request:
+    paths: ['ingestion/**', '.github/workflows/ingestion.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  postgres-and-decoder:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env:
+          POSTGRES_USER: oceanpi_test
+          POSTGRES_PASSWORD: test-only
+          POSTGRES_DB: oceanpi_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U oceanpi_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Build the pinned decoder
+        run: |
+          git init /tmp/canboat
+          git -C /tmp/canboat remote add origin https://github.com/canboat/canboat.git
+          git -C /tmp/canboat fetch --depth 1 origin 5b8340403e009b935f6a398b1ef0244a03e3d128
+          git -C /tmp/canboat checkout --detach FETCH_HEAD
+          make -C /tmp/canboat/analyzer analyzer BUILDDIR=rel/build
+          make -C /tmp/canboat/candump2analyzer BUILDDIR=rel/build
+      - name: Install dependencies
+        working-directory: ingestion
+        run: pip install -r requirements-cloud.lock -e '.[test]' ruff==0.17.3
+      - name: Check and test
+        working-directory: ingestion
+        env:
+          TEST_DATABASE_URL: postgresql://oceanpi_test:test-only@127.0.0.1:5432/oceanpi_test
+          CANBOAT_ANALYZER: /tmp/canboat/rel/build/analyzer
+          CANBOAT_CONVERTER: /tmp/canboat/rel/build/candump2analyzer
+        run: |
+          ruff check oceanpi_ingest tests validate_recording.py
+          ruff format --check oceanpi_ingest tests validate_recording.py
+          python -m unittest discover -s tests -v
+      - name: Validate Render configuration
+        working-directory: ingestion
+        run: |
+          python - <<'PY'
+          import json, urllib.request, jsonschema, yaml
+          schema = json.load(urllib.request.urlopen('https://render.com/schema/render.yaml.json'))
+          with open('render.yaml') as source:
+              jsonschema.validate(yaml.safe_load(source), schema)
+          PY
+      - name: Build and smoke-test the deployment image
+        run: |
+          docker build -t oceanpi-ingestion:test ingestion
+          test "$(docker run --rm oceanpi-ingestion:test analyzer -version)" = '9.1.0'
+          docker run --rm oceanpi-ingestion:test python -c 'from oceanpi_ingest.api import create_app; from oceanpi_ingest.worker import Worker'

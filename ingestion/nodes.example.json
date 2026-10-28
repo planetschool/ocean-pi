@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "nodes": [
+    {
+      "node_id": "tabor-boy/nmea-main",
+      "vessel_id": "tabor-boy",
+      "node_type": "nmea2000",
+      "bucket": "YOUR_EXISTING_R2_BUCKET",
+      "prefix": "raw/tabor-boy/",
+      "data_type": "nmea2000.raw",
+      "input_format": "candump",
+      "date_partitioned": true,
+      "approved": true
+    }
+  ]
+}

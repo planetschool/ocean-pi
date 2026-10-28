@@ -1,0 +1,9 @@
+**
+!Dockerfile
+!requirements-cloud.lock
+!pyproject.toml
+!README.md
+!oceanpi_ingest/
+!oceanpi_ingest/**
+**/__pycache__/
+**/*.pyc
