@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "oceanpi-ingest"
+version = "0.2.0"
+requires-python = ">=3.10"
+description = "Read-only R2 ingestion, NMEA decoding, durable tracking and dashboard API"
+dependencies = []
+
+[project.optional-dependencies]
+r2 = ["boto3>=1.34,<2"]
+cloud = ["boto3>=1.34,<2", "SQLAlchemy>=2.0,<2.1", "psycopg[binary]>=3.2,<4", "fastapi>=0.115,<1", "uvicorn>=0.30,<1"]
+test = ["httpx>=0.27,<1", "PyYAML>=6,<7", "jsonschema>=4,<5"]
+
+[project.scripts]
+oceanpi-ingest = "oceanpi_ingest.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["oceanpi_ingest*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]

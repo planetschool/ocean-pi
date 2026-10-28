@@ -1,0 +1,60 @@
+# Deploy this Blueprint using ingestion/render.yaml; it creates NEW services only.
+services:
+  - type: worker
+    name: oceanpi-ingestion-worker
+    runtime: docker
+    plan: starter
+    region: virginia
+    dockerContext: ./ingestion
+    dockerfilePath: ./ingestion/Dockerfile
+    dockerCommand: python -m oceanpi_ingest.worker
+    autoDeployTrigger: "off"
+    maxShutdownDelaySeconds: 120
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: oceanpi-ingestion-db
+          property: connectionString
+      - key: R2_ENDPOINT_URL
+        sync: false
+      - key: R2_BUCKET
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_DEFAULT_REGION
+        value: auto
+      - key: POLL_SECONDS
+        value: "30"
+      - key: RECONCILE_SECONDS
+        value: "3600"
+      - key: INITIAL_LOOKBACK_SECONDS
+        value: "3600"
+      - key: MEASUREMENT_RETENTION_DAYS
+        value: "1"
+  - type: web
+    name: oceanpi-ingestion-api
+    runtime: docker
+    plan: starter
+    region: virginia
+    dockerContext: ./ingestion
+    dockerfilePath: ./ingestion/Dockerfile
+    dockerCommand: sh -c 'uvicorn oceanpi_ingest.api:create_app --factory --host 0.0.0.0 --port "$PORT"'
+    autoDeployTrigger: "off"
+    healthCheckPath: /healthz
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: oceanpi-ingestion-db
+          property: connectionString
+      - key: API_TOKEN
+        generateValue: true
+
+databases:
+  - name: oceanpi-ingestion-db
+    region: virginia
+    plan: basic-1gb
+    postgresMajorVersion: "17"
+    diskSizeGB: 10
+    ipAllowList: []

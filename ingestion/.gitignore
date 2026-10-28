@@ -1,0 +1,11 @@
+__pycache__/
+*.egg-info/
+.venv/
+*.log.gz
+*-decoded.jsonl
+validation/
+*.db
+.env
+.env.*
+!.env.example
+nodes.local.json
