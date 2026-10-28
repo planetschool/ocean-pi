@@ -389,3 +389,17 @@ class CloudTests(unittest.TestCase):
         self.assertTrue(Worker(self.store, ArchiveReader(client), [NODE], processor).process_one())
         self.assertEqual(self.count(), 2)
         self.assertEqual(self.store.job_rows()[0]["status"], "completed")
+
+    @unittest.skipUnless(
+        os.environ.get("TEST_DATABASE_URL"), "Postgres high-volume identity integration"
+    )
+    def test_measurement_ids_support_more_than_32_bits(self):
+        # At the observed rate, a 32-bit sequence would overflow within a year.
+        self.discover()
+        job = self.store.claim(PROCESSOR_VERSION)
+        with self.store.engine.begin() as conn:
+            conn.exec_driver_sql(
+                "SELECT setval(pg_get_serial_sequence('oceanpi_measurements', 'id'), 2147483648, false)"
+            )
+        self.store.finish(job, [row()], 1)
+        self.assertEqual(self.store.latest(NODE.node_id)[0]["id"], 2147483648)

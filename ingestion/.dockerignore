@@ -5,3 +5,5 @@
 !README.md
 !oceanpi_ingest/
 !oceanpi_ingest/**
+**/__pycache__/
+**/*.pyc

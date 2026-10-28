@@ -149,8 +149,7 @@ pagination, and the user-supplied Tabor Boy recording. The private recording is
 not uploaded to GitHub. `.github/workflows/ingestion.yml` also exercises Postgres
 17, synthetic CAN decoding and Docker build/smoke tests on Linux.
 
-The Blueprint has been checked against Render's official JSON schema. This Mac
-has no Docker daemon, so the Linux image build is delegated to the prepared CI
-workflow and remains unverified until that job runs. Authenticated R2 reads and
-a real Render rollout still require cloud access. No live deployment or cloud
-latency test has been performed.
+The Blueprint has been checked against Render's official JSON schema. GitHub CI
+has successfully built and smoke-tested the Linux image and exercised Postgres
+17. Authenticated R2 reads and a real Render rollout still require cloud access.
+No live deployment or cloud latency test has been performed.

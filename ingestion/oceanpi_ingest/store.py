@@ -8,6 +8,7 @@ from collections.abc import Iterable
 
 from sqlalchemy import (
     JSON,
+    BigInteger,
     Boolean,
     Column,
     Float,
@@ -75,7 +76,9 @@ objects = Table(
 measurements = Table(
     "oceanpi_measurements",
     metadata,
-    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column(
+        "id", BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True
+    ),
     Column("object_id", ForeignKey(objects.c.id, ondelete="CASCADE"), nullable=False),
     Column("node_id", String(128), nullable=False),
     Column("record_number", Integer, nullable=False),
